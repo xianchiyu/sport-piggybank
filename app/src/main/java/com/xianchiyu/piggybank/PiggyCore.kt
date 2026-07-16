@@ -214,7 +214,7 @@ object ReminderScheduler {
     }
 
     fun schedule(context: Context, hour: Int, minute: Int, type: String) {
-        val calendar = java.util.Calendar().apply {
+        val calendar = java.util.Calendar.getInstance().apply {
             set(java.util.Calendar.HOUR_OF_DAY, hour)
             set(java.util.Calendar.MINUTE, minute)
             set(java.util.Calendar.SECOND, 0)
