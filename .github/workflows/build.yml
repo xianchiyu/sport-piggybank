@@ -28,7 +28,9 @@ jobs:
         gradle-version: '8.5'
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon
+      run: |
+        gradle wrapper --gradle-version 8.5
+        ./gradlew assembleDebug --no-daemon
 
     - name: Get short SHA
       id: vars
