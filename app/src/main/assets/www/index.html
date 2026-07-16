@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>运动存钱罐</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ 主页 ═══ -->
+<div id="page-home" class="page active">
+  <div class="header">
+    <div class="date" id="todayDate"></div>
+    <div class="weather" id="weatherTag"></div>
+  </div>
+
+  <!-- 打卡区 -->
+  <div class="section">
+    <div class="section-title">今日打卡</div>
+    <div class="checkin-grid">
+      <button class="checkin-btn" id="btnExercise" onclick="openExercise()">
+        <span class="btn-icon">🏃</span>
+        <span class="btn-label">运动</span>
+        <span class="btn-streak" id="streakExercise"></span>
+      </button>
+      <button class="checkin-btn" id="btnBreakfast" onclick="quickCheckin('breakfast')">
+        <span class="btn-icon">🍳</span>
+        <span class="btn-label">早饭</span>
+        <span class="btn-streak" id="streakBreakfast"></span>
+      </button>
+      <button class="checkin-btn" id="btnDinner" onclick="quickCheckin('dinner')">
+        <span class="btn-icon">🥗</span>
+        <span class="btn-label">晚饭</span>
+        <span class="btn-streak" id="streakDinner"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 运动选项弹窗 -->
+  <div id="exerciseModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">选择运动</div>
+      <div class="ex-type">
+        <button class="ex-opt active" data-type="run" onclick="selectExType('run')">跑步</button>
+        <button class="ex-opt" data-type="walk" onclick="selectExType('walk')">走路</button>
+      </div>
+      <div class="ex-duration">
+        <button class="ex-dur" data-dur="10" onclick="selectExDur(10)">10分钟<br><small>3铜/1铜</small></button>
+        <button class="ex-dur" data-dur="20" onclick="selectExDur(20)">20分钟<br><small>6铜/3铜</small></button>
+        <button class="ex-dur active" data-dur="30" onclick="selectExDur(30)">30分钟<br><small>10铜/5铜</small></button>
+      </div>
+      <div class="ex-distance">
+        <label>跑步距离(km)，≥3km额外+5铜</label>
+        <input type="number" id="exDistance" placeholder="如 4" step="0.1" min="0">
+      </div>
+      <button class="btn-primary" onclick="doExerciseCheckin()">确认打卡</button>
+      <button class="btn-cancel" onclick="closeExercise()">取消</button>
+    </div>
+  </div>
+
+  <!-- 储钱罐区 -->
+  <div class="section">
+    <div class="section-title">储钱罐</div>
+    <div class="piggybank">
+      <div class="jar">
+        <div class="jar-coins" id="jarVisual"></div>
+      </div>
+      <div class="balance">
+        <span class="coin gold">●<span id="goldCount">0</span></span>
+        <span class="coin silver">●<span id="silverCount">0</span></span>
+        <span class="coin copper">●<span id="copperCount">0</span></span>
+      </div>
+      <div class="yuan" id="totalYuan">¥0.0</div>
+    </div>
+  </div>
+
+  <!-- 今日记录 -->
+  <div class="section">
+    <div class="section-title">今日</div>
+    <div id="todayLog" class="log-list"></div>
+  </div>
+</div>
+
+<!-- ═══ 账本页 ═══ -->
+<div id="page-ledger" class="page">
+  <div class="section">
+    <div class="section-title">本季度</div>
+    <div class="quarter-stats">
+      <div class="stat"><span class="stat-label">总收入</span><span class="stat-val" id="qIncome">¥0</span></div>
+      <div class="stat"><span class="stat-label">总支出</span><span class="stat-val" id="qExpense">¥0</span></div>
+      <div class="stat highlight"><span class="stat-label">余额</span><span class="stat-val" id="qBalance">¥0</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">消费登记</div>
+    <input type="text" id="expenseName" placeholder="买了什么" class="input">
+    <input type="number" id="expenseAmount" placeholder="多少钱" class="input" step="0.1" min="0">
+    <button class="btn-primary" onclick="doConsume()">扣币</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">流水</div>
+    <div id="txnList" class="log-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">季度提现</div>
+    <p class="hint">季度末点击提现，手动将余额转入支付宝货币基金。</p>
+    <button class="btn-primary" onclick="doQuarterWithdraw()">生成报告并清零</button>
+  </div>
+</div>
+
+<!-- ═══ 设置页 ═══ -->
+<div id="page-settings" class="page">
+  <div class="section">
+    <div class="section-title">城市</div>
+    <select id="citySelect" class="input" onchange="doSetCity()">
+      <option value="beijing">北京</option>
+      <option value="shanghai">上海</option>
+      <option value="guangzhou">广州</option>
+      <option value="shenzhen">深圳</option>
+      <option value="chengdu">成都</option>
+      <option value="hangzhou">杭州</option>
+      <option value="wuhan">武汉</option>
+      <option value="xian">西安</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <div class="section-title">提醒</div>
+    <div class="setting-row"><span>早餐 7:30</span><span class="hint">已开启</span></div>
+    <div class="setting-row"><span>晚餐 19:30</span><span class="hint">已开启</span></div>
+    <div class="setting-row"><span>运动 20:00</span><span class="hint">已开启</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">社交豁免</div>
+    <div class="setting-row"><span>本月已用</span><span id="socUsed">0/3</span></div>
+    <button class="btn-small" onclick="doSocialExempt()">使用社交豁免</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">违规惩罚</div>
+    <div class="setting-row"><span>本周期违规</span><span id="penCount">0次</span></div>
+    <div class="setting-row"><span>下次罚金</span><span id="penNext" class="warn">¥10</span></div>
+    <div class="setting-row"><span>周期剩余</span><span id="penDays">15天</span></div>
+    <hr>
+    <p class="hint">上报违规（双轨惩罚）</p>
+    <div class="violation-btns">
+      <button class="btn-warn" onclick="doReportViolation('exercise','未运动')">运动违规</button>
+      <button class="btn-warn" onclick="doReportViolation('breakfast','没做早饭')">早饭违规</button>
+      <button class="btn-warn" onclick="doReportViolation('dinner','晚餐不达标')">晚饭违规</button>
+    </div>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<nav class="tabbar">
+  <div class="tab active" onclick="switchPage('home')" id="tab-home">主页</div>
+  <div class="tab" onclick="switchPage('ledger')" id="tab-ledger">账本</div>
+  <div class="tab" onclick="switchPage('settings')" id="tab-settings">设置</div>
+</nav>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
