@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 运动存钱罐 Sport Piggybank 🏃💰
 
 一个安卓 App，把运动和健康饮食行为转化为虚拟货币。
@@ -62,3 +63,7 @@ sport-piggybank/
 ├── gradle.properties
 └── .github/workflows/build.yml    # CI编译
 ```
+=======
+# sport-piggybank
+运动存钱罐 - 用自己的运动赚取金币存入储蓄罐
+>>>>>>> 4cac5fb6ef116860aa85650ea84a8d374ec9cb05
