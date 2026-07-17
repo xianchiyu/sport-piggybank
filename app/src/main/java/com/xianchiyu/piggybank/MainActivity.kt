@@ -16,7 +16,6 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
-    private val initialViolations = mutableListOf<String>()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,13 +23,6 @@ class MainActivity : AppCompatActivity() {
 
         PiggyData.init(this)
         ReminderScheduler.scheduleAll(this)
-
-        // 自动违规检测
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_MONTH, -1)
-        val yesterday = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.time)
-        initialViolations.addAll(AutoPenalty.check(today, yesterday))
 
         webView = WebView(this)
         setContentView(webView)
@@ -54,40 +46,27 @@ class MainActivity : AppCompatActivity() {
     inner class JsBridge {
 
         @JavascriptInterface
-        fun getAutoViolations(): String {
-            val arr = JSONArray()
-            for (v in initialViolations) arr.put(v)
-            return ok(JSONObject().put("violations", arr))
-        }
-
-        // ── 余额 ──────────────────────────────────────
-
-        @JavascriptInterface
         fun getBalance(): String {
             val c = PiggyData.copper
             val s = PiggyData.silver
             val g = PiggyData.gold
             val yuan = CoinUtils.totalYuan(c, s, g)
-            return JSONObject().apply {
+            return ok(JSONObject().apply {
                 put("copper", c)
                 put("silver", s)
                 put("gold", g)
                 put("yuan", yuan)
-            }.toString()
+            })
         }
-
-        // ── 连续天数 ──────────────────────────────────
 
         @JavascriptInterface
         fun getStreaks(): String {
-            return JSONObject().apply {
+            return ok(JSONObject().apply {
                 put("exercise", PiggyData.exerciseStreak)
                 put("breakfast", PiggyData.breakfastStreak)
                 put("dinner", PiggyData.dinnerStreak)
-            }.toString()
+            })
         }
-
-        // ── 打卡 ──────────────────────────────────────
 
         @JavascriptInterface
         fun checkin(type: String, exerciseType: String, duration: Int, distance: Float): String {
@@ -159,8 +138,6 @@ class MainActivity : AppCompatActivity() {
             })
         }
 
-        // ── 消费 ──────────────────────────────────────
-
         @JavascriptInterface
         fun consume(amount: Float, note: String): String {
             val copperNeeded = (amount * 10).toInt()
@@ -175,19 +152,15 @@ class MainActivity : AppCompatActivity() {
             PiggyData.gold = g
 
             PiggyData.quarterExpense += amount
-            val copperSpent = copperNeeded
-            addTransaction("expense", "purchase", -amount, "$note (-${copperSpent}铜)")
+            addTransaction("expense", "purchase", -amount, note)
 
             return ok(JSONObject().apply {
                 put("copper", c)
                 put("silver", s)
                 put("gold", g)
                 put("yuan", CoinUtils.totalYuan(c, s, g))
-                put("copperSpent", copperSpent)
             })
         }
-
-        // ── 违规 ──────────────────────────────────────
 
         @JavascriptInterface
         fun reportViolation(type: String, description: String): String {
@@ -207,7 +180,7 @@ class MainActivity : AppCompatActivity() {
                 "dinner" -> PiggyData.dinnerStreak = 0
             }
 
-            addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (罚金¥$cashPenalty)")
+            addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (¥$cashPenalty)")
 
             return ok(JSONObject().apply {
                 put("cashPenalty", cashPenalty)
@@ -215,8 +188,6 @@ class MainActivity : AppCompatActivity() {
                 put("streakCleared", type)
             })
         }
-
-        // ── 社交豁免 ──────────────────────────────────
 
         @JavascriptInterface
         fun useSocialExempt(): String {
@@ -246,8 +217,6 @@ class MainActivity : AppCompatActivity() {
             })
         }
 
-        // ── 违规状态 ──────────────────────────────────
-
         @JavascriptInterface
         fun getPenaltyStatus(): String {
             val today = todayStr()
@@ -268,33 +237,27 @@ class MainActivity : AppCompatActivity() {
             })
         }
 
-        // ── 季度数据 ──────────────────────────────────
-
         @JavascriptInterface
         fun getQuarterSummary(): String {
             val incomeCopper = (PiggyData.quarterIncome * 10).toInt()
             val expenseCopper = (PiggyData.quarterExpense * 10).toInt()
-            val balanceCopper = incomeCopper - expenseCopper
             return ok(JSONObject().apply {
+                put("income", PiggyData.quarterIncome)
+                put("expense", PiggyData.quarterExpense)
+                put("balance", PiggyData.quarterIncome - PiggyData.quarterExpense)
                 put("incomeCopper", incomeCopper)
                 put("expenseCopper", expenseCopper)
-                put("balanceCopper", balanceCopper)
-                put("copper", PiggyData.copper)
-                put("silver", PiggyData.silver)
-                put("gold", PiggyData.gold)
+                put("balanceCopper", incomeCopper - expenseCopper)
             })
         }
 
         @JavascriptInterface
         fun quarterWithdraw(): String {
-            val incomeCopper = (PiggyData.quarterIncome * 10).toInt()
-            val expenseCopper = (PiggyData.quarterExpense * 10).toInt()
-            val balanceCopper = incomeCopper - expenseCopper
+            val balance = PiggyData.quarterIncome - PiggyData.quarterExpense
             val report = JSONObject().apply {
-                put("balanceCopper", balanceCopper)
-                put("gold", PiggyData.gold)
-                put("silver", PiggyData.silver)
-                put("copper", PiggyData.copper)
+                put("income", PiggyData.quarterIncome)
+                put("expense", PiggyData.quarterExpense)
+                put("balance", balance)
                 put("date", todayStr())
             }
             PiggyData.quarterIncome = 0f
@@ -302,18 +265,36 @@ class MainActivity : AppCompatActivity() {
             PiggyData.copper = 0
             PiggyData.silver = 0
             PiggyData.gold = 0
-            addTransaction("withdraw", "quarter_withdraw", 0f, "季度提现: 金${PiggyData.gold} / 银${PiggyData.silver} / 铜${PiggyData.copper}")
+            addTransaction("withdraw", "quarter_withdraw", balance, "季度提现: ¥$balance")
             return ok(report)
         }
 
-        // ── 流水记录 ──────────────────────────────────
-
         @JavascriptInterface
         fun getTransactions(): String {
-            return PiggyData.transactions
+            return ok(JSONArray(PiggyData.transactions))
         }
 
-        // ── 设置 ──────────────────────────────────────
+        @JavascriptInterface
+        fun getAutoViolations(): String {
+            val firstUse = PiggyData.firstUseDate
+            if (firstUse.isEmpty()) {
+                PiggyData.firstUseDate = todayStr()
+                return ok(JSONObject().put("violations", JSONArray()))
+            }
+            val yesterday = yesterdayStr()
+            val today = todayStr()
+            val violations = JSONArray()
+            if (PiggyData.lastExerciseDate != yesterday && PiggyData.lastExerciseDate != today) {
+                violations.put("昨天未运动打卡")
+            }
+            if (PiggyData.lastBreakfastDate != yesterday && PiggyData.lastBreakfastDate != today) {
+                violations.put("昨天未早餐打卡")
+            }
+            if (PiggyData.lastDinnerDate != yesterday && PiggyData.lastDinnerDate != today) {
+                violations.put("昨天未晚餐打卡")
+            }
+            return ok(JSONObject().put("violations", violations))
+        }
 
         @JavascriptInterface
         fun getCity(): String {
@@ -325,8 +306,6 @@ class MainActivity : AppCompatActivity() {
             PiggyData.city = city
             return ok(JSONObject().put("city", city))
         }
-
-        // ── 内部工具 ──────────────────────────────────
 
         private fun addTransaction(type: String, subtype: String, amount: Float, note: String) {
             val arr = JSONArray(PiggyData.transactions)
@@ -368,8 +347,15 @@ class MainActivity : AppCompatActivity() {
             else -> type
         }
 
-        private fun ok(data: JSONObject): String =
-            JSONObject().put("ok", true).put("data", data).toString()
+        private fun ok(data: Any): String {
+            val obj = JSONObject()
+            obj.put("ok", true)
+            when (data) {
+                is JSONObject -> obj.put("data", data)
+                is JSONArray -> obj.put("data", data)
+            }
+            return obj.toString()
+        }
 
         private fun err(msg: String): String =
             JSONObject().put("ok", false).put("error", msg).toString()

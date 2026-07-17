@@ -1,4 +1,4 @@
-package com.xianchiyu.piggybank
+﻿package com.xianchiyu.piggybank
 
 import android.app.AlarmManager
 import android.app.NotificationChannel
@@ -78,6 +78,10 @@ object PiggyData {
     var city: String
         get() = prefs?.getString("city", "beijing") ?: "beijing"
         set(v) { prefs?.edit()?.putString("city", v)?.apply() }
+
+    var firstUseDate: String
+        get() = prefs?.getString("firstUseDate", "") ?: ""
+        set(v) { prefs?.edit()?.putString("firstUseDate", v)?.apply() }
 
     var transactions: String
         get() = prefs?.getString("txns", "[]") ?: "[]"

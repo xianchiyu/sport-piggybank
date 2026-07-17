@@ -1,36 +1,16 @@
-/* 运动存钱罐 — 样式 v3 带3D硬币 */
 * { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: #f5f5f5; color: #333; line-height: 1.6;
-  padding-bottom: 60px; -webkit-tap-highlight-color: transparent;
-}
-
-.page { display:none; padding:16px; }
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#f5f5f5; color:#333; padding-bottom:60px; -webkit-tap-highlight-color:transparent; }
+.page { display:none; padding:12px; }
 .page.active { display:block; }
-
-/* 头部 */
-.header { display:flex; justify-content:center; align-items:center; margin-bottom:16px; }
-.date { font-size:18px; font-weight:700; }
-
-/* 卡片 */
+.date { font-size:18px; font-weight:700; text-align:center; margin-bottom:12px; }
 .section { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
 .section-title { font-size:14px; font-weight:700; color:#888; margin-bottom:12px; }
-
-/* 打卡按钮 */
-.checkin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-.checkin-btn {
-  background:#f9f9f9; border:2px solid #e0e0e0; border-radius:12px; padding:16px 8px;
-  display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
-  transition:all .2s; user-select:none;
-}
-.checkin-btn:active { transform:scale(0.95); }
+.checkin-btn { width:100%; display:flex; flex-direction:column; align-items:center; gap:2px; padding:14px; margin-bottom:8px; background:#fff; border:2px solid #e0e0e0; border-radius:12px; cursor:pointer; transition:all .2s; user-select:none; }
+.checkin-btn:active { transform:scale(0.97); }
 .checkin-btn.done { background:#e8f5e9; border-color:#4caf50; }
 .btn-icon { font-size:28px; }
 .btn-label { font-size:14px; font-weight:600; }
 .btn-streak { font-size:11px; color:#ff9800; min-height:16px; }
-
-/* 弹窗 */
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; }
 .modal.show { display:flex; align-items:center; justify-content:center; }
 .modal-content { background:#fff; border-radius:16px; padding:24px; width:85%; max-width:340px; }
@@ -45,146 +25,41 @@ body {
 .ex-distance label { font-size:12px; color:#888; display:block; margin-bottom:6px; }
 .ex-distance input { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:16px; }
 
-/* ═══ 小猪储钱罐 ═══ */
-.piggy-section { overflow:visible; }
-.piggy-wrapper { text-align:center; position:relative; }
-
-/* SVG小猪保持不变——硬币由内部DIV覆盖 */
-.piggy-svg { width:160px; height:180px; display:block; margin:0 auto; }
-
-/* 硬币堆叠容器，绝对定位于小猪肚内 */
-.piggy-coins-3d {
-  pointer-events:none;
-  position:absolute;
-  left:50%;
-  top:50%;
-  margin-left:-78px;
-  margin-top:-96px;
-  width:156px;
-  height:192px;
-  perspective:600px;
-}
-
-.coin-layer {
-  position:absolute;
-  width:100%;
-  height:100%;
-  transform-style:preserve-3d;
-}
-
-/* 单枚3D硬币 */
-.coin-3d {
-  position:absolute;
-  width:22px;
-  height:22px;
-  border-radius:50%;
-  transform-style:preserve-3d;
-  transform:rotateX(70deg) rotateZ(0deg);
-  box-shadow:
-    inset 0 -3px 4px rgba(0,0,0,0.15),
-    inset 0 3px 4px rgba(255,255,255,0.25),
-    0 2px 6px rgba(0,0,0,0.2);
-}
-/* 边缘厚度效果 */
-.coin-3d::before {
-  content:'';
-  position:absolute;
-  inset:-1px;
-  border-radius:50%;
-  z-index:-1;
-}
-.coin-3d.gold {
-  background: linear-gradient(135deg, #ffe44d, #ffa000, #ff8f00);
-  border:1px solid #c67c00;
-}
-.coin-3d.gold::before { background:#c67c00; }
-.coin-3d.silver {
-  background: linear-gradient(135deg, #eceff1, #b0bec5, #78909c);
-  border:1px solid #546e7a;
-}
-.coin-3d.silver::before { background:#546e7a; }
-.coin-3d.copper {
-  background: linear-gradient(135deg, #ffcc80, #e6a23c, #bf6900);
-  border:1px solid #9e5c00;
-}
-.coin-3d.copper::before { background:#9e5c00; }
-
-/* 超过上限时的 +N 标记 */
-.coin-overflow {
-  position:absolute;
-  font-size:11px;
-  font-weight:800;
-  text-shadow:0 1px 2px rgba(0,0,0,0.3);
-  pointer-events:none;
-}
+.piggy-section { text-align:center; }
+.piggy-wrapper { position:relative; display:inline-block; width:200px; height:200px; }
+.piggy-img { width:200px; height:200px; display:block; pointer-events:none; }
+.coin-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
+.coin { position:absolute; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.3); border:1.5px solid; }
+.coin.gold { background:linear-gradient(135deg,#ffe44d,#ffa000); border-color:#c67c00; color:rgba(255,255,255,0.95); z-index:20; }
+.coin.silver { background:linear-gradient(135deg,#eceff1,#b0bec5); border-color:#546e7a; color:rgba(0,0,0,0.5); z-index:10; }
+.coin.copper { background:linear-gradient(135deg,#ffcc80,#e6a23c); border-color:#9e5c00; color:rgba(255,255,255,0.9); z-index:1; }
+.coin-overflow { position:absolute; font-size:11px; font-weight:700; transform:translate(-50%,-50%); pointer-events:none; z-index:999; }
 .coin-overflow.gold { color:#ffa000; }
 .coin-overflow.silver { color:#78909c; }
 .coin-overflow.copper { color:#bf6900; }
+.coin-falling { animation:coinDrop 0.6s ease-out forwards; }
+@keyframes coinDrop { 0% { opacity:1; transform:translate(-50%,-50%) translateY(-60px) scale(0.6); } 60% { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1.2); } 100% { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1); } }
 
-/* 高光 */
-.coin-3d::after {
-  content:'';
-  position:absolute;
-  top:3px;
-  left:5px;
-  width:8px;
-  height:6px;
-  border-radius:50%;
-  background:rgba(255,255,255,0.5);
-  transform:rotateX(-30deg);
-}
-/* 图案（币面刻字） */
-.coin-3d .coin-mark {
-  position:absolute;
-  top:50%; left:50%;
-  transform:translate(-50%,-50%) rotateX(-70deg);
-  font-size:8px;
-  font-weight:bold;
-  color:rgba(0,0,0,0.2);
-  mix-blend-mode:multiply;
-}
-
-/* 叠层偏移 */
-.coin-3d.gold { z-index:20; }
-.coin-3d.silver { z-index:10; }
-.coin-3d.copper { z-index:1; }
-
-/* 投币掉落动画（3D版） */
-@keyframes coinDrop3d {
-  0% { opacity:1; transform:rotateX(70deg) translateY(-80px) scale(0.8); }
-  50% { opacity:1; transform:rotateX(70deg) translateY(0px) scale(1.1); }
-  70% { transform:rotateX(70deg) translateY(-3px) scale(1.05); }
-  100% { opacity:1; transform:rotateX(70deg) translateY(0px) scale(1); }
-}
-.coin-falling { animation:coinDrop3d 0.6s ease-out forwards; }
-
-/* 数字余额 */
-.piggy-coins { display:flex; justify-content:center; gap:16px; margin:4px 0 4px; }
+.piggy-coins { display:flex; justify-content:center; gap:16px; margin:8px 0 4px; }
 .coin-text { font-size:13px; font-weight:700; }
 .coin-text.gold { color:#ffa000; }
 .coin-text.silver { color:#78909c; }
 .coin-text.copper { color:#bf6900; }
 .piggy-yuan { font-size:22px; font-weight:800; color:#333; }
 
-/* 违规弹窗 */
 .violation-list { margin-bottom:16px; }
 .violation-item { padding:10px 0; border-bottom:1px solid #f0f0f0; color:#d32f2f; font-size:14px; }
 
-/* 记录列表 */
 .log-list { max-height:300px; overflow-y:auto; }
 .log-item { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
 .log-item:last-child { border:none; }
 
-/* 输入 */
 .input { width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px; margin-bottom:8px; }
 select.input { background:#fff; }
-
-/* 消费金额行 */
 .consume-amount-row { display:flex; gap:8px; align-items:center; }
 .amount-input { flex:1; }
 .copper-eq { font-size:14px; color:#888; white-space:nowrap; }
 
-/* 按钮 */
 .btn-primary { width:100%; padding:14px; background:#4caf50; color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; }
 .btn-primary:active { background:#43a047; }
 .btn-cancel { width:100%; padding:14px; background:transparent; color:#888; border:none; font-size:14px; margin-top:8px; cursor:pointer; }
@@ -193,7 +68,6 @@ select.input { background:#fff; }
 .violation-btns { display:flex; gap:8px; }
 .violation-btns button { flex:1; }
 
-/* 季度统计 */
 .quarter-stats { display:flex; gap:12px; margin-bottom:8px; }
 .stat { flex:1; text-align:center; }
 .stat-label { display:block; font-size:12px; color:#888; }
@@ -201,18 +75,16 @@ select.input { background:#fff; }
 .stat.highlight .stat-val { color:#4caf50; }
 .ledger-coins { margin-top:8px; }
 
-/* 设置行 */
 .setting-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:14px; }
 .setting-row:last-child { border:none; }
 .hint { font-size:12px; color:#999; }
 .warn { color:#f44336; font-weight:700; }
+
 hr { border:none; border-top:1px solid #f0f0f0; margin:12px 0; }
 
-/* 底部导航 */
 .tabbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:#fff; border-top:1px solid #e0e0e0; height:56px; z-index:50; }
 .tab { flex:1; display:flex; align-items:center; justify-content:center; font-size:14px; color:#999; cursor:pointer; user-select:none; }
 .tab.active { color:#4caf50; font-weight:700; }
 
-/* Toast */
 .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; z-index:200; opacity:0; transition:opacity .3s; pointer-events:none; }
 .toast.show { opacity:1; }
