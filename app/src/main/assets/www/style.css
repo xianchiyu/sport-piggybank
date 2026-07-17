@@ -79,6 +79,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif
   100% { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1); }
 }
 
+.piggy-wrapper{position:relative;width:200px;height:220px;margin:0 auto 16px;overflow:hidden}.piggy-img{width:100%;height:100%;object-fit:contain;display:block;position:relative;z-index:2;pointer-events:none}.coin-layer{position:absolute;bottom:30%;left:18%;width:64%;height:60%;z-index:1;pointer-events:none;overflow:hidden}
 .piggy-coins { display:flex; justify-content:center; gap:16px; margin:8px 0 4px; }
 .coin-text { font-size:13px; font-weight:700; }
 .coin-text.gold { color:#C48800; }
