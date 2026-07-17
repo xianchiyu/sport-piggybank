@@ -26,8 +26,10 @@ class MainActivity : AppCompatActivity() {
         ReminderScheduler.scheduleAll(this)
 
         // 自动违规检测
-        val today = todayStr()
-        val yesterday = yesterdayStr()
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DAY_OF_MONTH, -1)
+        val yesterday = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.time)
         initialViolations.addAll(AutoPenalty.check(today, yesterday))
 
         webView = WebView(this)
