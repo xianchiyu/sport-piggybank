@@ -33,7 +33,6 @@ function init() {
   try { checkAutoViolations(); } catch(e) {}
   $('expenseAmount').addEventListener('input', updateCopperEq);
 }
-
 function updateCopperEq() {
   var v = parseFloat($('expenseAmount').value) || 0;
   $('copperEq').textContent = '= ' + Math.round(v * 10) + '铜';
@@ -51,16 +50,10 @@ function checkAutoViolations() {
   $('violationList').innerHTML = html;
   $('violationModal').classList.add('show');
 }
-
-function closeViolationModal() {
-  $('violationModal').classList.remove('show');
-}
+function closeViolationModal() { $('violationModal').classList.remove('show'); }
 
 function seedRand(seed) {
-  return function() {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  };
+  return function() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
 }
 
 function renderPiggy(gold, silver, copper) {
@@ -77,60 +70,41 @@ function renderPiggy(gold, silver, copper) {
 function renderCoinStack(gold, silver, copper) {
   var layer = $('coinLayer');
   if (!layer) return;
-
   var wrapper = layer.parentElement;
-  var wrapperW = wrapper.offsetWidth || 220;
-  var wrapperH = wrapper.offsetHeight || 220;
-
-  var bellyCx = wrapperW * 0.50;
-  var bellyCy = wrapperH * 0.60;
-  var bellyRx = wrapperW * 0.20;
-  var bellyRy = wrapperH * 0.12;
-
-  var maxShow = { gold: 8, silver: 12, copper: 16 };
+  var wrapperW = wrapper.offsetWidth || 200;
+  var wrapperH = wrapper.offsetHeight || 200;
+  var cx = wrapperW * 0.50;
+  var cy = wrapperH * 0.62;
+  var rx = wrapperW * 0.20;
+  var ry = wrapperH * 0.12;
+  var maxShow = { gold: 10, silver: 14, copper: 18 };
   var html = '';
-  html += buildCoinLayer('copper', Math.min(copper, maxShow.copper), copper, maxShow.copper, 0, bellyCx, bellyCy, bellyRx, bellyRy);
-  html += buildCoinLayer('silver', Math.min(silver, maxShow.silver), silver, maxShow.silver, 1, bellyCx, bellyCy, bellyRx, bellyRy);
-  html += buildCoinLayer('gold', Math.min(gold, maxShow.gold), gold, maxShow.gold, 2, bellyCx, bellyCy, bellyRx, bellyRy);
+  html += buildLayer('copper', Math.min(copper, maxShow.copper), copper, maxShow.copper, 0, cx, cy, rx, ry);
+  html += buildLayer('silver', Math.min(silver, maxShow.silver), silver, maxShow.silver, 1, cx, cy, rx, ry);
+  html += buildLayer('gold', Math.min(gold, maxShow.gold), gold, maxShow.gold, 2, cx, cy, rx, ry);
   layer.innerHTML = html;
 }
 
-function buildCoinLayer(type, show, total, max, tier, cx, cy, rx, ry) {
+function buildLayer(type, show, total, max, tier, cx, cy, rx, ry) {
   if (show === 0) return '';
   var rand = seedRand(type.charCodeAt(0) * 100 + total);
   var html = '';
-
-  var tierOffset = tier * 10;
-  var coinW, coinH;
-
-  if (type === 'gold') { coinW = 24; coinH = 16; }
-  else if (type === 'silver') { coinW = 22; coinH = 14; }
-  else { coinW = 20; coinH = 12; }
-
+  var size = type === 'gold' ? 20 : type === 'silver' ? 18 : 16;
+  var tierOffset = tier * 7;
   for (var i = 0; i < show; i++) {
     var angle = (i / show) * Math.PI * 4 + tier * 0.5;
-    var radiusFactor = 0.35 + 0.25 * (1 - i / show);
-    var jx = (rand() - 0.5) * rx * 0.25;
-    var jy = (rand() - 0.5) * ry * 0.2;
-
-    var x = cx + Math.cos(angle) * rx * radiusFactor + jx;
-    var y = cy + ry - 2 - tierOffset - i * 2.8 + Math.sin(angle) * ry * radiusFactor * 0.5 + jy;
-
-    var rot = (rand() - 0.5) * 40;
+    var rf = 0.35 + 0.25 * (1 - i / show);
+    var jx = (rand() - 0.5) * rx * 0.2;
+    var jy = (rand() - 0.5) * ry * 0.15;
+    var x = cx + Math.cos(angle) * rx * rf + jx;
+    var y = cy + ry - 2 - tierOffset - i * 2.6 + Math.sin(angle) * ry * rf * 0.4 + jy;
+    var rot = (rand() - 0.5) * 15;
     var sc = 0.85 + rand() * 0.3;
-
-    html += '<div class="coin ' + type + '" style="' +
-      'left:' + x + 'px;top:' + y + 'px;' +
-      'width:' + coinW + 'px;height:' + coinH + 'px;' +
-      'transform:translate(-50%,-50%) rotate(' + rot + 'deg) scale(' + sc + ');' +
-      'z-index:' + (tier * 100 + i) + ';"></div>';
+    html += '<div class="coin ' + type + '" style="left:' + x + 'px;top:' + y + 'px;width:' + size + 'px;height:' + size + 'px;transform:translate(-50%,-50%) rotate(' + rot + 'deg) scale(' + sc + ');z-index:' + (tier * 100 + i) + ';"></div>';
   }
-
   if (total > max) {
-    html += '<div class="coin-overflow ' + type + '" style="' +
-      'left:' + cx + 'px;top:' + (cy - 30) + 'px;">+' + (total - max) + '</div>';
+    html += '<div class="coin-overflow ' + type + '" style="left:' + cx + 'px;top:' + (cy - 28) + 'px;">+' + (total - max) + '</div>';
   }
-
   return html;
 }
 
@@ -138,34 +112,25 @@ function coinDropAnimation(type, count) {
   var layer = $('coinLayer');
   if (!layer) return;
   var wrapper = layer.parentElement;
-  var wrapperW = wrapper.offsetWidth || 220;
+  var wrapperW = wrapper.offsetWidth || 200;
   var cx = wrapperW * 0.50;
-  var cy = 20;
-
+  var sz = type === 'gold' ? 20 : type === 'silver' ? 18 : 16;
   for (var i = 0; i < count && i < 3; i++) {
     (function(idx) {
       var c = document.createElement('div');
       c.className = 'coin ' + type + ' coin-falling';
-      var cw = type === 'gold' ? 24 : type === 'silver' ? 22 : 20;
-      var ch = type === 'gold' ? 16 : type === 'silver' ? 14 : 12;
-      c.style.width = cw + 'px';
-      c.style.height = ch + 'px';
-      c.style.left = (cx + idx * 12 - 12) + 'px';
-      c.style.top = cy + 'px';
+      c.style.width = sz + 'px';
+      c.style.height = sz + 'px';
+      c.style.left = (cx + idx * 10 - 10) + 'px';
+      c.style.top = '30px';
       c.style.zIndex = '9999';
       layer.appendChild(c);
-      setTimeout(function() {
-        if (c.parentNode) c.parentNode.removeChild(c);
-      }, 600);
+      setTimeout(function() { if (c.parentNode) c.parentNode.removeChild(c); }, 600);
     })(i);
   }
 }
 
-function loadHome() {
-  loadBalance();
-  loadStreaks();
-  loadTodayLog();
-}
+function loadHome() { loadBalance(); loadStreaks(); loadTodayLog(); }
 
 function loadBalance() {
   var r = parseResult(Android.getBalance());
@@ -192,9 +157,7 @@ function loadTodayLog() {
   if (txns.length === 0) {
     html = '<div class="hint" style="text-align:center;padding:8px">今天还没有记录</div>';
   } else {
-    txns.forEach(function(t){
-      html += '<div class="log-item"><span>' + t.note + '</span></div>';
-    });
+    txns.forEach(function(t){ html += '<div class="log-item"><span>' + t.note + '</span></div>'; });
   }
   $('todayLog').innerHTML = html;
 }
@@ -207,9 +170,7 @@ function quickCheckin(type) {
     var btn = type === 'breakfast' ? $('btnBreakfast') : $('btnDinner');
     btn.classList.add('done');
     coinDropAnimation('copper', 1);
-    loadBalance();
-    loadStreaks();
-    loadTodayLog();
+    loadBalance(); loadStreaks(); loadTodayLog();
   } else {
     toast(r.error);
   }
@@ -240,9 +201,7 @@ function doExerciseCheckin() {
     $('btnExercise').classList.add('done');
     closeExercise();
     coinDropAnimation('copper', 2);
-    loadBalance();
-    loadStreaks();
-    loadTodayLog();
+    loadBalance(); loadStreaks(); loadTodayLog();
   } else {
     toast(r.error);
   }
@@ -267,9 +226,7 @@ function loadTxnList() {
   if (txns.length === 0) {
     html = '<div class="hint" style="text-align:center;padding:8px">还没有记录</div>';
   } else {
-    txns.forEach(function(t){
-      html += '<div class="log-item"><span>' + t.date + ' ' + t.note + '</span></div>';
-    });
+    txns.forEach(function(t){ html += '<div class="log-item"><span>' + t.date + ' ' + t.note + '</span></div>'; });
   }
   $('txnList').innerHTML = html;
 }
@@ -285,23 +242,15 @@ function doConsume() {
     $('expenseName').value = '';
     $('expenseAmount').value = '';
     $('copperEq').textContent = '= 0铜';
-    loadBalance();
-    loadLedger();
-  } else {
-    toast(r.error);
-  }
+    loadBalance(); loadLedger();
+  } else { toast(r.error); }
 }
 
 function doQuarterWithdraw() {
   if (!confirm('确定季度提现？余额将清零。')) return;
   var r = parseResult(Android.quarterWithdraw());
-  if (r.ok) {
-    toast('提现完成');
-    loadBalance();
-    loadLedger();
-  } else {
-    toast('提现失败');
-  }
+  if (r.ok) { toast('提现完成'); loadBalance(); loadLedger(); }
+  else { toast('提现失败'); }
 }
 
 function loadSettings() {
@@ -317,33 +266,19 @@ function loadSettings() {
   }
 }
 
-function doSetCity() {
-  var city = $('citySelect').value;
-  Android.setCity(city);
-  toast('城市已更新');
-}
+function doSetCity() { var city = $('citySelect').value; Android.setCity(city); toast('城市已更新'); }
 
 function doSocialExempt() {
   var r = parseResult(Android.useSocialExempt());
-  if (r.ok) {
-    toast('豁免已使用 ' + r.data.used + '/3');
-    loadSettings();
-  } else {
-    toast(r.error);
-  }
+  if (r.ok) { toast('豁免已使用 ' + r.data.used + '/3'); loadSettings(); }
+  else { toast(r.error); }
 }
 
 function doReportViolation(type, desc) {
   if (!confirm('确认上报违规：' + desc + '？')) return;
   var r = parseResult(Android.reportViolation(type, desc));
-  if (r.ok) {
-    toast('违规！罚金¥' + r.data.cashPenalty);
-    loadSettings();
-    loadBalance();
-    loadStreaks();
-  } else {
-    toast('操作失败');
-  }
+  if (r.ok) { toast('违规！罚金¥' + r.data.cashPenalty); loadSettings(); loadBalance(); loadStreaks(); }
+  else { toast('操作失败'); }
 }
 
 init();
