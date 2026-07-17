@@ -16,6 +16,7 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private val initialViolations = mutableListOf<String>()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,6 +24,11 @@ class MainActivity : AppCompatActivity() {
 
         PiggyData.init(this)
         ReminderScheduler.scheduleAll(this)
+
+        // 自动违规检测
+        val today = todayStr()
+        val yesterday = yesterdayStr()
+        initialViolations.addAll(AutoPenalty.check(today, yesterday))
 
         webView = WebView(this)
         setContentView(webView)
@@ -43,11 +49,14 @@ class MainActivity : AppCompatActivity() {
         else super.onBackPressed()
     }
 
-    /**
-     * JS 桥接层：前端通过 Android.xxx() 调用原生功能
-     * 所有方法必须加 @JavascriptInterface 注解
-     */
     inner class JsBridge {
+
+        @JavascriptInterface
+        fun getAutoViolations(): String {
+            val arr = JSONArray()
+            for (v in initialViolations) arr.put(v)
+            return ok(JSONObject().put("violations", arr))
+        }
 
         // ── 余额 ──────────────────────────────────────
 
@@ -82,7 +91,6 @@ class MainActivity : AppCompatActivity() {
         fun checkin(type: String, exerciseType: String, duration: Int, distance: Float): String {
             val today = todayStr()
 
-            // 判断是否今天已打过此类型卡
             val lastDate = when (type) {
                 "exercise" -> PiggyData.lastExerciseDate
                 "breakfast" -> PiggyData.lastBreakfastDate
@@ -91,7 +99,6 @@ class MainActivity : AppCompatActivity() {
             }
             if (lastDate == today) return err("今天已经打过此卡")
 
-            // 判断是否昨天打过（决定连续天数+1还是重置为1）
             val yesterday = yesterdayStr()
             val prevStreak = when (type) {
                 "exercise" -> PiggyData.exerciseStreak
@@ -101,7 +108,6 @@ class MainActivity : AppCompatActivity() {
             }
             val newStreak = if (lastDate == yesterday) prevStreak + 1 else 1
 
-            // 计算币
             val baseCoins = when (type) {
                 "exercise" -> CoinUtils.exerciseCoins(exerciseType, duration, distance, false)
                 "breakfast" -> 3
@@ -111,7 +117,6 @@ class MainActivity : AppCompatActivity() {
             val mult = CoinUtils.multiplier(newStreak)
             val coinsEarned = (baseCoins * mult).toInt()
 
-            // 更新余额 + 自动合成
             val (c, s, g) = CoinUtils.autoMerge(
                 PiggyData.copper + coinsEarned,
                 PiggyData.silver,
@@ -121,7 +126,6 @@ class MainActivity : AppCompatActivity() {
             PiggyData.silver = s
             PiggyData.gold = g
 
-            // 更新连续天数 + 日期
             when (type) {
                 "exercise" -> {
                     PiggyData.exerciseStreak = newStreak
@@ -137,11 +141,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // 季度收入
             val yuan = coinsEarned * 0.1f
             PiggyData.quarterIncome += yuan
 
-            // 记录流水
             addTransaction("income", type, yuan, "${typeLabel(type)} +${coinsEarned}铜(x${mult})")
 
             return ok(JSONObject().apply {
@@ -171,13 +173,15 @@ class MainActivity : AppCompatActivity() {
             PiggyData.gold = g
 
             PiggyData.quarterExpense += amount
-            addTransaction("expense", "purchase", -amount, note)
+            val copperSpent = copperNeeded
+            addTransaction("expense", "purchase", -amount, "$note (-${copperSpent}铜)")
 
             return ok(JSONObject().apply {
                 put("copper", c)
                 put("silver", s)
                 put("gold", g)
                 put("yuan", CoinUtils.totalYuan(c, s, g))
+                put("copperSpent", copperSpent)
             })
         }
 
@@ -187,7 +191,6 @@ class MainActivity : AppCompatActivity() {
         fun reportViolation(type: String, description: String): String {
             val today = todayStr()
 
-            // 违规周期检查（15天）
             val penStart = PiggyData.penaltyPeriodStart
             if (penStart.isEmpty() || daysBetween(penStart, today) >= 15) {
                 PiggyData.penaltyPeriodStart = today
@@ -196,25 +199,13 @@ class MainActivity : AppCompatActivity() {
             PiggyData.penaltyCount += 1
             val cashPenalty = CoinUtils.cashPenalty(PiggyData.penaltyCount)
 
-            // 积分惩罚：连带扣回上一笔同项收入 + 连续清零
-            val (c, s, g) = when (type) {
-                "exercise" -> {
-                    PiggyData.exerciseStreak = 0
-                    Triple(PiggyData.copper, PiggyData.silver, PiggyData.gold)
-                }
-                "breakfast" -> {
-                    PiggyData.breakfastStreak = 0
-                    Triple(PiggyData.copper, PiggyData.silver, PiggyData.gold)
-                }
-                "dinner" -> {
-                    PiggyData.dinnerStreak = 0
-                    Triple(PiggyData.copper, PiggyData.silver, PiggyData.gold)
-                }
-                else -> Triple(PiggyData.copper, PiggyData.silver, PiggyData.gold)
+            when (type) {
+                "exercise" -> PiggyData.exerciseStreak = 0
+                "breakfast" -> PiggyData.breakfastStreak = 0
+                "dinner" -> PiggyData.dinnerStreak = 0
             }
-            // MVP暂不实现连带扣回精确金额，只清零连续天数
 
-            addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (¥$cashPenalty)")
+            addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (罚金¥$cashPenalty)")
 
             return ok(JSONObject().apply {
                 put("cashPenalty", cashPenalty)
@@ -227,7 +218,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun useSocialExempt(): String {
-            val month = todayStr().substring(0, 7) // "2026-07"
+            val month = todayStr().substring(0, 7)
             if (PiggyData.socialExemptMonth != month) {
                 PiggyData.socialExemptMonth = month
                 PiggyData.socialExemptUsed = 0
@@ -279,29 +270,37 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun getQuarterSummary(): String {
+            val incomeCopper = (PiggyData.quarterIncome * 10).toInt()
+            val expenseCopper = (PiggyData.quarterExpense * 10).toInt()
+            val balanceCopper = incomeCopper - expenseCopper
             return ok(JSONObject().apply {
-                put("income", PiggyData.quarterIncome)
-                put("expense", PiggyData.quarterExpense)
-                put("balance", PiggyData.quarterIncome - PiggyData.quarterExpense)
+                put("incomeCopper", incomeCopper)
+                put("expenseCopper", expenseCopper)
+                put("balanceCopper", balanceCopper)
+                put("copper", PiggyData.copper)
+                put("silver", PiggyData.silver)
+                put("gold", PiggyData.gold)
             })
         }
 
         @JavascriptInterface
         fun quarterWithdraw(): String {
-            val balance = PiggyData.quarterIncome - PiggyData.quarterExpense
+            val incomeCopper = (PiggyData.quarterIncome * 10).toInt()
+            val expenseCopper = (PiggyData.quarterExpense * 10).toInt()
+            val balanceCopper = incomeCopper - expenseCopper
             val report = JSONObject().apply {
-                put("income", PiggyData.quarterIncome)
-                put("expense", PiggyData.quarterExpense)
-                put("balance", balance)
+                put("balanceCopper", balanceCopper)
+                put("gold", PiggyData.gold)
+                put("silver", PiggyData.silver)
+                put("copper", PiggyData.copper)
                 put("date", todayStr())
             }
-            // 清零
             PiggyData.quarterIncome = 0f
             PiggyData.quarterExpense = 0f
             PiggyData.copper = 0
             PiggyData.silver = 0
             PiggyData.gold = 0
-            addTransaction("withdraw", "quarter_withdraw", balance, "季度提现: ¥$balance")
+            addTransaction("withdraw", "quarter_withdraw", 0f, "季度提现: 金${PiggyData.gold} / 银${PiggyData.silver} / 铜${PiggyData.copper}")
             return ok(report)
         }
 
@@ -337,7 +336,6 @@ class MainActivity : AppCompatActivity() {
                 put("note", note)
                 put("time", System.currentTimeMillis())
             })
-            // 保留最近200条
             val result = JSONArray()
             val start = maxOf(0, arr.length() - 200)
             for (i in start until arr.length()) result.put(arr[i])

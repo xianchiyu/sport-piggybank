@@ -63,6 +63,10 @@ object PiggyData {
         get() = prefs?.getString("penStart", "") ?: ""
         set(v) { prefs?.edit()?.putString("penStart", v)?.apply() }
 
+    var autoCheckDate: String
+        get() = prefs?.getString("autoCheck", "") ?: ""
+        set(v) { prefs?.edit()?.putString("autoCheck", v)?.apply() }
+
     var socialExemptMonth: String
         get() = prefs?.getString("socMonth", "") ?: ""
         set(v) { prefs?.edit()?.putString("socMonth", v)?.apply() }
@@ -168,6 +172,63 @@ object CoinUtils {
             return when (duration) { 10 -> 1; 20 -> 3; 30 -> 5; else -> 0 }
         }
         return 0
+    }
+}
+
+// ── 自动违规检测 ─────────────────────────────────────
+object AutoPenalty {
+    fun check(today: String, yesterday: String): List<String> {
+        val violations = mutableListOf<String>()
+
+        if (PiggyData.autoCheckDate == today) return violations
+        PiggyData.autoCheckDate = today
+
+        if (PiggyData.lastExerciseDate.isEmpty() &&
+            PiggyData.lastBreakfastDate.isEmpty() &&
+            PiggyData.lastDinnerDate.isEmpty()) return violations
+
+        checkOne("exercise", yesterday, "未运动", violations)
+        checkOne("breakfast", yesterday, "没做早饭", violations)
+        checkOne("dinner", yesterday, "晚餐不达标", violations)
+
+        return violations
+    }
+
+    private fun checkOne(type: String, yesterday: String, desc: String, out: MutableList<String>) {
+        val lastDate = when (type) {
+            "exercise" -> PiggyData.lastExerciseDate
+            "breakfast" -> PiggyData.lastBreakfastDate
+            "dinner" -> PiggyData.lastDinnerDate
+            else -> return
+        }
+        if (lastDate >= yesterday) return
+
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        val periodStart = PiggyData.penaltyPeriodStart
+
+        if (periodStart.isEmpty()) {
+            PiggyData.penaltyPeriodStart = today
+            PiggyData.penaltyCount = 0
+        } else {
+            val daysSince = try {
+                val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                ((fmt.parse(today)!!.time - fmt.parse(periodStart)!!.time) / (1000 * 60 * 60 * 24)).toInt()
+            } catch (e: Exception) { 0 }
+            if (daysSince >= 15) {
+                PiggyData.penaltyPeriodStart = today
+                PiggyData.penaltyCount = 0
+            }
+        }
+        PiggyData.penaltyCount += 1
+        val cashPenalty = CoinUtils.cashPenalty(PiggyData.penaltyCount)
+
+        when (type) {
+            "exercise" -> PiggyData.exerciseStreak = 0
+            "breakfast" -> PiggyData.breakfastStreak = 0
+            "dinner" -> PiggyData.dinnerStreak = 0
+        }
+
+        out.add("$desc 违规(现金罚金¥$cashPenalty) 连续天数已清零")
     }
 }
 

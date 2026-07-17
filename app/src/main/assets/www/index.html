@@ -8,11 +8,19 @@
 </head>
 <body>
 
+<!-- 违规弹窗 -->
+<div id="violationModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-title">⚠️ 发现违规</div>
+    <div id="violationList" class="violation-list"></div>
+    <button class="btn-primary" onclick="closeViolationModal()">知道了</button>
+  </div>
+</div>
+
 <!-- ═══ 主页 ═══ -->
 <div id="page-home" class="page active">
   <div class="header">
     <div class="date" id="todayDate"></div>
-    <div class="weather" id="weatherTag"></div>
   </div>
 
   <!-- 打卡区 -->
@@ -46,12 +54,12 @@
         <button class="ex-opt" data-type="walk" onclick="selectExType('walk')">走路</button>
       </div>
       <div class="ex-duration">
-        <button class="ex-dur" data-dur="10" onclick="selectExDur(10)">10分钟<br><small>3铜/1铜</small></button>
-        <button class="ex-dur" data-dur="20" onclick="selectExDur(20)">20分钟<br><small>6铜/3铜</small></button>
-        <button class="ex-dur active" data-dur="30" onclick="selectExDur(30)">30分钟<br><small>10铜/5铜</small></button>
+        <button class="ex-dur" data-dur="10" onclick="selectExDur(10)">10分钟</button>
+        <button class="ex-dur" data-dur="20" onclick="selectExDur(20)">20分钟</button>
+        <button class="ex-dur active" data-dur="30" onclick="selectExDur(30)">30分钟</button>
       </div>
-      <div class="ex-distance">
-        <label>跑步距离(km)，≥3km额外+5铜</label>
+      <div class="ex-distance" id="exDistanceWrap">
+        <label>跑步距离(km)  ≥3额外+5铜</label>
         <input type="number" id="exDistance" placeholder="如 4" step="0.1" min="0">
       </div>
       <button class="btn-primary" onclick="doExerciseCheckin()">确认打卡</button>
@@ -59,19 +67,64 @@
     </div>
   </div>
 
-  <!-- 储钱罐区 -->
-  <div class="section">
+  <!-- 透明小猪储钱罐 -->
+  <div class="section piggy-section">
     <div class="section-title">储钱罐</div>
-    <div class="piggybank">
-      <div class="jar">
-        <div class="jar-coins" id="jarVisual"></div>
+    <div class="piggy-wrapper">
+      <!-- 小猪 SVG 主体 -->
+      <svg class="piggy-svg" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="bellyClip">
+            <ellipse cx="75" cy="100" rx="52" ry="44"/>
+          </clipPath>
+        </defs>
+
+        <!-- 腿 -->
+        <rect x="40" y="137" width="12" height="18" rx="5" fill="#ff9eb5"/>
+        <rect x="60" y="140" width="12" height="15" rx="5" fill="#ff9eb5"/>
+        <rect x="82" y="140" width="12" height="15" rx="5" fill="#ff9eb5"/>
+        <rect x="102" y="137" width="12" height="18" rx="5" fill="#ff9eb5"/>
+
+        <!-- 耳 -->
+        <ellipse cx="130" cy="42" rx="12" ry="14" fill="#ff9eb5" transform="rotate(25 130 42)"/>
+        <ellipse cx="98" cy="38" rx="12" ry="14" fill="#ff9eb5" transform="rotate(-30 98 38)"/>
+
+        <!-- 尾巴 -->
+        <path d="M18 85 Q5 70 12 55 Q20 40 28 48" fill="none" stroke="#ff9eb5" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- 身体（半透明） -->
+        <ellipse cx="75" cy="100" rx="55" ry="47" fill="rgba(255,182,193,0.15)" stroke="#ff9eb5" stroke-width="3"/>
+
+        <!-- 头 -->
+        <ellipse cx="118" cy="62" rx="30" ry="26" fill="rgba(255,182,193,0.15)" stroke="#ff9eb5" stroke-width="3"/>
+
+        <!-- 鼻 -->
+        <ellipse cx="136" cy="68" rx="12" ry="8" fill="#ff9eb5"/>
+        <circle cx="139" cy="66" r="2" fill="#fff"/>
+        <circle cx="139" cy="71" r="2" fill="#fff"/>
+
+        <!-- 眼 -->
+        <circle cx="125" cy="56" r="3.5" fill="#555"/>
+        <circle cx="108" cy="56" r="3.5" fill="#555"/>
+        <circle cx="126" cy="55" r="1.5" fill="#fff"/>
+        <circle cx="109" cy="55" r="1.5" fill="#fff"/>
+
+        <!-- 投币口 -->
+        <rect x="50" y="52" width="16" height="6" rx="3" fill="#ff9eb5"/>
+        <rect x="52" y="54" width="12" height="2" rx="1" fill="#fff" opacity="0.6"/>
+      </svg>
+
+      <!-- 3D 硬币堆叠层（覆盖在肚子上） -->
+      <div class="piggy-coins-3d" id="coins3dLayer">
+        <div class="coin-layer" id="coinLayer"></div>
       </div>
-      <div class="balance">
-        <span class="coin gold">●<span id="goldCount">0</span></span>
-        <span class="coin silver">●<span id="silverCount">0</span></span>
-        <span class="coin copper">●<span id="copperCount">0</span></span>
+
+      <div class="piggy-coins">
+        <span class="coin-text gold">金 <span id="goldCount">0</span></span>
+        <span class="coin-text silver">银 <span id="silverCount">0</span></span>
+        <span class="coin-text copper">铜 <span id="copperCount">0</span></span>
       </div>
-      <div class="yuan" id="totalYuan">¥0.0</div>
+      <div class="piggy-yuan" id="totalYuan">¥0.0</div>
     </div>
   </div>
 
@@ -87,17 +140,27 @@
   <div class="section">
     <div class="section-title">本季度</div>
     <div class="quarter-stats">
-      <div class="stat"><span class="stat-label">总收入</span><span class="stat-val" id="qIncome">¥0</span></div>
-      <div class="stat"><span class="stat-label">总支出</span><span class="stat-val" id="qExpense">¥0</span></div>
-      <div class="stat highlight"><span class="stat-label">余额</span><span class="stat-val" id="qBalance">¥0</span></div>
+      <div class="stat"><span class="stat-label">总收入</span><span class="stat-val" id="qIncomeCopper">0铜</span></div>
+      <div class="stat"><span class="stat-label">总支出</span><span class="stat-val" id="qExpenseCopper">0铜</span></div>
+      <div class="stat highlight"><span class="stat-label">余额</span><span class="stat-val" id="qBalanceCopper">0铜</span></div>
+    </div>
+    <div class="piggy-coins ledger-coins" id="ledgerCoins">
+      <span class="coin-text gold">金 <span id="ledgerGold">0</span></span>
+      <span class="coin-text silver">银 <span id="ledgerSilver">0</span></span>
+      <span class="coin-text copper">铜 <span id="ledgerCopper">0</span></span>
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">消费登记</div>
-    <input type="text" id="expenseName" placeholder="买了什么" class="input">
-    <input type="number" id="expenseAmount" placeholder="多少钱" class="input" step="0.1" min="0">
-    <button class="btn-primary" onclick="doConsume()">扣币</button>
+    <div class="consume-form">
+      <input type="text" id="expenseName" placeholder="买了什么" class="input">
+      <div class="consume-amount-row">
+        <input type="number" id="expenseAmount" placeholder="金额(元)" class="input amount-input" step="0.1" min="0">
+        <span class="copper-eq" id="copperEq">= 0铜</span>
+      </div>
+      <button class="btn-primary" onclick="doConsume()">扣币</button>
+    </div>
   </div>
 
   <div class="section">
@@ -107,7 +170,7 @@
 
   <div class="section">
     <div class="section-title">季度提现</div>
-    <p class="hint">季度末点击提现，手动将余额转入支付宝货币基金。</p>
+    <p class="hint">季度末点击提现，余额清零，手动转入余额宝。</p>
     <button class="btn-primary" onclick="doQuarterWithdraw()">生成报告并清零</button>
   </div>
 </div>
@@ -138,7 +201,7 @@
   <div class="section">
     <div class="section-title">社交豁免</div>
     <div class="setting-row"><span>本月已用</span><span id="socUsed">0/3</span></div>
-    <button class="btn-small" onclick="doSocialExempt()">使用社交豁免</button>
+    <button class="btn-small" onclick="doSocialExempt()">使用豁免</button>
   </div>
 
   <div class="section">
@@ -147,11 +210,11 @@
     <div class="setting-row"><span>下次罚金</span><span id="penNext" class="warn">¥10</span></div>
     <div class="setting-row"><span>周期剩余</span><span id="penDays">15天</span></div>
     <hr>
-    <p class="hint">上报违规（双轨惩罚）</p>
+    <p class="hint">手动上报违规（自动检测已开启，缺失打卡自动触发）</p>
     <div class="violation-btns">
-      <button class="btn-warn" onclick="doReportViolation('exercise','未运动')">运动违规</button>
-      <button class="btn-warn" onclick="doReportViolation('breakfast','没做早饭')">早饭违规</button>
-      <button class="btn-warn" onclick="doReportViolation('dinner','晚餐不达标')">晚饭违规</button>
+      <button class="btn-warn" onclick="doReportViolation('exercise','未运动')">运动</button>
+      <button class="btn-warn" onclick="doReportViolation('breakfast','没做早饭')">早饭</button>
+      <button class="btn-warn" onclick="doReportViolation('dinner','晚餐不达标')">晚饭</button>
     </div>
   </div>
 </div>
@@ -163,7 +226,6 @@
   <div class="tab" onclick="switchPage('settings')" id="tab-settings">设置</div>
 </nav>
 
-<!-- Toast -->
 <div id="toast" class="toast"></div>
 
 <script src="app.js"></script>
