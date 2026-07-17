@@ -56,8 +56,6 @@ function closeViolationModal() {
   $('violationModal').classList.remove('show');
 }
 
-var BELLY = { cx: 0.50, cy: 0.60, rx: 0.20, ry: 0.14 };
-
 function seedRand(seed) {
   return function() {
     seed = (seed * 9301 + 49297) % 233280;
@@ -79,60 +77,86 @@ function renderPiggy(gold, silver, copper) {
 function renderCoinStack(gold, silver, copper) {
   var layer = $('coinLayer');
   if (!layer) return;
+
+  var wrapper = layer.parentElement;
+  var wrapperW = wrapper.offsetWidth || 220;
+  var wrapperH = wrapper.offsetHeight || 220;
+
+  var bellyCx = wrapperW * 0.50;
+  var bellyCy = wrapperH * 0.60;
+  var bellyRx = wrapperW * 0.20;
+  var bellyRy = wrapperH * 0.12;
+
   var maxShow = { gold: 8, silver: 12, copper: 16 };
   var html = '';
-  html += buildCoinLayer('copper', Math.min(copper, maxShow.copper), copper, maxShow.copper, 0);
-  html += buildCoinLayer('silver', Math.min(silver, maxShow.silver), silver, maxShow.silver, 1);
-  html += buildCoinLayer('gold', Math.min(gold, maxShow.gold), gold, maxShow.gold, 2);
+  html += buildCoinLayer('copper', Math.min(copper, maxShow.copper), copper, maxShow.copper, 0, bellyCx, bellyCy, bellyRx, bellyRy);
+  html += buildCoinLayer('silver', Math.min(silver, maxShow.silver), silver, maxShow.silver, 1, bellyCx, bellyCy, bellyRx, bellyRy);
+  html += buildCoinLayer('gold', Math.min(gold, maxShow.gold), gold, maxShow.gold, 2, bellyCx, bellyCy, bellyRx, bellyRy);
   layer.innerHTML = html;
 }
 
-function buildCoinLayer(type, show, total, max, tier) {
+function buildCoinLayer(type, show, total, max, tier, cx, cy, rx, ry) {
   if (show === 0) return '';
   var rand = seedRand(type.charCodeAt(0) * 100 + total);
   var html = '';
-  var tierOffset = tier * 0.025;
+
+  var tierOffset = tier * 10;
+  var coinW, coinH;
+
+  if (type === 'gold') { coinW = 24; coinH = 16; }
+  else if (type === 'silver') { coinW = 22; coinH = 14; }
+  else { coinW = 20; coinH = 12; }
+
   for (var i = 0; i < show; i++) {
     var angle = (i / show) * Math.PI * 4 + tier * 0.5;
-    var radiusFactor = 0.45 + 0.2 * (1 - i / show);
-    var rx = BELLY.rx * radiusFactor;
-    var ry = BELLY.ry * radiusFactor;
-    var jitterX = (rand() - 0.5) * 0.03;
-    var jitterY = (rand() - 0.5) * 0.02;
-    var x = (BELLY.cx + Math.cos(angle) * rx + jitterX) * 100;
-    var y = (BELLY.cy + BELLY.ry - 0.01 - tierOffset - i * 0.007 + Math.sin(angle) * ry + jitterY) * 100;
-    var rot = (rand() - 0.5) * 50;
-    var scale = 0.85 + rand() * 0.25;
-    var mark = type === 'gold' ? '金' : type === 'silver' ? '银' : '铜';
+    var radiusFactor = 0.35 + 0.25 * (1 - i / show);
+    var jx = (rand() - 0.5) * rx * 0.25;
+    var jy = (rand() - 0.5) * ry * 0.2;
+
+    var x = cx + Math.cos(angle) * rx * radiusFactor + jx;
+    var y = cy + ry - 2 - tierOffset - i * 2.8 + Math.sin(angle) * ry * radiusFactor * 0.5 + jy;
+
+    var rot = (rand() - 0.5) * 40;
+    var sc = 0.85 + rand() * 0.3;
+
     html += '<div class="coin ' + type + '" style="' +
-      'left:' + x + '%;top:' + y + '%;' +
-      'transform:translate(-50%,-50%) rotate(' + rot + 'deg) scale(' + scale + ');' +
-      'z-index:' + (tier * 100 + i) + ';">' + mark + '</div>';
+      'left:' + x + 'px;top:' + y + 'px;' +
+      'width:' + coinW + 'px;height:' + coinH + 'px;' +
+      'transform:translate(-50%,-50%) rotate(' + rot + 'deg) scale(' + sc + ');' +
+      'z-index:' + (tier * 100 + i) + ';"></div>';
   }
+
   if (total > max) {
     html += '<div class="coin-overflow ' + type + '" style="' +
-      'left:' + (BELLY.cx * 100) + '%;top:' + ((BELLY.cy - 0.06) * 100) + '%;">+' + (total - max) + '</div>';
+      'left:' + cx + 'px;top:' + (cy - 30) + 'px;">+' + (total - max) + '</div>';
   }
+
   return html;
 }
 
 function coinDropAnimation(type, count) {
   var layer = $('coinLayer');
   if (!layer) return;
-  var mark = type === 'gold' ? '金' : type === 'silver' ? '银' : '铜';
+  var wrapper = layer.parentElement;
+  var wrapperW = wrapper.offsetWidth || 220;
+  var cx = wrapperW * 0.50;
+  var cy = 20;
+
   for (var i = 0; i < count && i < 3; i++) {
     (function(idx) {
       var c = document.createElement('div');
       c.className = 'coin ' + type + ' coin-falling';
-      var startX = (BELLY.cx + (idx - 1) * 0.04) * 100;
-      c.style.left = startX + '%';
-      c.style.top = (BELLY.cy * 100) + '%';
+      var cw = type === 'gold' ? 24 : type === 'silver' ? 22 : 20;
+      var ch = type === 'gold' ? 16 : type === 'silver' ? 14 : 12;
+      c.style.width = cw + 'px';
+      c.style.height = ch + 'px';
+      c.style.left = (cx + idx * 12 - 12) + 'px';
+      c.style.top = cy + 'px';
       c.style.zIndex = '9999';
-      c.textContent = mark;
       layer.appendChild(c);
       setTimeout(function() {
         if (c.parentNode) c.parentNode.removeChild(c);
-      }, 700);
+      }, 600);
     })(i);
   }
 }

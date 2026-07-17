@@ -5,12 +5,14 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif
 .date { font-size:18px; font-weight:700; text-align:center; margin-bottom:12px; }
 .section { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
 .section-title { font-size:14px; font-weight:700; color:#888; margin-bottom:12px; }
+
 .checkin-btn { width:100%; display:flex; flex-direction:column; align-items:center; gap:2px; padding:14px; margin-bottom:8px; background:#fff; border:2px solid #e0e0e0; border-radius:12px; cursor:pointer; transition:all .2s; user-select:none; }
 .checkin-btn:active { transform:scale(0.97); }
 .checkin-btn.done { background:#e8f5e9; border-color:#4caf50; }
 .btn-icon { font-size:28px; }
 .btn-label { font-size:14px; font-weight:600; }
 .btn-streak { font-size:11px; color:#ff9800; min-height:16px; }
+
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; }
 .modal.show { display:flex; align-items:center; justify-content:center; }
 .modal-content { background:#fff; border-radius:16px; padding:24px; width:85%; max-width:340px; }
@@ -26,23 +28,33 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif
 .ex-distance input { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:16px; }
 
 .piggy-section { text-align:center; }
-.piggy-wrapper { position:relative; display:inline-block; width:200px; height:200px; }
-.piggy-img { width:200px; height:200px; display:block; pointer-events:none; }
-.coin-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
-.coin { position:absolute; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.3); border:1.5px solid; }
-.coin.gold { background:linear-gradient(135deg,#ffe44d,#ffa000); border-color:#c67c00; color:rgba(255,255,255,0.95); z-index:20; }
-.coin.silver { background:linear-gradient(135deg,#eceff1,#b0bec5); border-color:#546e7a; color:rgba(0,0,0,0.5); z-index:10; }
-.coin.copper { background:linear-gradient(135deg,#ffcc80,#e6a23c); border-color:#9e5c00; color:rgba(255,255,255,0.9); z-index:1; }
+.piggy-wrapper { position:relative; display:inline-block; width:220px; max-width:85vw; }
+.piggy-img { width:100%; height:auto; display:block; pointer-events:none; }
+
+.coin-layer { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+
+.coin { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,0.25); }
+
+.coin.gold { background:radial-gradient(ellipse at 35% 30%, #ffe55b 0%, #ffb300 40%, #e68400 80%, #b85e00 100%); border:1px solid #cc7700; }
+.coin.gold::after { content:''; position:absolute; width:55%; height:35%; top:18%; left:22%; background:radial-gradient(ellipse, rgba(255,255,200,0.7) 0%, transparent 100%); border-radius:50%; }
+
+.coin.silver { background:radial-gradient(ellipse at 35% 30%, #eceff1 0%, #b0bec5 40%, #78909c 80%, #546e7a 100%); border:1px solid #607d8b; }
+.coin.silver::after { content:''; position:absolute; width:55%; height:35%; top:18%; left:22%; background:radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 100%); border-radius:50%; }
+
+.coin.copper { background:radial-gradient(ellipse at 35% 30%, #ffe0b2 0%, #e6a23c 40%, #bf6900 80%, #8d4e00 100%); border:1px solid #a56320; }
+.coin.copper::after { content:''; position:absolute; width:55%; height:35%; top:18%; left:22%; background:radial-gradient(ellipse, rgba(255,220,150,0.6) 0%, transparent 100%); border-radius:50%; }
+
 .coin-overflow { position:absolute; font-size:11px; font-weight:700; transform:translate(-50%,-50%); pointer-events:none; z-index:999; }
-.coin-overflow.gold { color:#ffa000; }
+.coin-overflow.gold { color:#ffb300; }
 .coin-overflow.silver { color:#78909c; }
 .coin-overflow.copper { color:#bf6900; }
-.coin-falling { animation:coinDrop 0.6s ease-out forwards; }
-@keyframes coinDrop { 0% { opacity:1; transform:translate(-50%,-50%) translateY(-60px) scale(0.6); } 60% { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1.2); } 100% { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1); } }
+
+.coin-falling { animation:coinDrop 0.5s ease-out forwards; }
+@keyframes coinDrop { 0% { opacity:0; transform:translate(-50%,-50%) translateY(-40px) scale(0.5); } 50% { opacity:1; transform:translate(-50%,-50%) translateY(5px) scale(1.15); } 100% { opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1); } }
 
 .piggy-coins { display:flex; justify-content:center; gap:16px; margin:8px 0 4px; }
 .coin-text { font-size:13px; font-weight:700; }
-.coin-text.gold { color:#ffa000; }
+.coin-text.gold { color:#e68400; }
 .coin-text.silver { color:#78909c; }
 .coin-text.copper { color:#bf6900; }
 .piggy-yuan { font-size:22px; font-weight:800; color:#333; }
@@ -79,7 +91,6 @@ select.input { background:#fff; }
 .setting-row:last-child { border:none; }
 .hint { font-size:12px; color:#999; }
 .warn { color:#f44336; font-weight:700; }
-
 hr { border:none; border-top:1px solid #f0f0f0; margin:12px 0; }
 
 .tabbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:#fff; border-top:1px solid #e0e0e0; height:56px; z-index:50; }
