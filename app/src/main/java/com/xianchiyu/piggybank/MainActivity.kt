@@ -338,7 +338,7 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun getWeatherStatus(): String {
             val rainy = WeatherHelper.isRainy(PiggyData.city)
-            return ok(JSONObject().put("rainy", rainy))
+            return ok(JSONObject().put("rainy", rainy as Any))
         }
 
         private fun addTransaction(type: String, subtype: String, amount: Float, note: String) {

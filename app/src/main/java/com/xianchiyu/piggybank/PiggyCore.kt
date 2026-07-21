@@ -244,7 +244,9 @@ object WeatherHelper {
     fun clearCache() {
         cachedRainy = null
         cacheDate = ""
-    }(city: String): Boolean {
+    }
+
+    fun isRainy(city: String): Boolean {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
 
         // 同一天只查一次
