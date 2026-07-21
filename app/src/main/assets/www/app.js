@@ -1,4 +1,4 @@
-/* 运动存钱罐 — 逻辑 v4 (三摞硬币) */
+/* 运动存钱罐 — 逻辑 v5 (设计稿风格) */
 
 function $(id) { return document.getElementById(id); }
 function toast(msg) {
@@ -17,7 +17,7 @@ function formatDate(d) {
 
 function switchPage(name) {
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(t){ t.classList.remove('active'); });
   $('page-' + name).classList.add('active');
   $('tab-' + name).classList.add('active');
   if (name === 'ledger') loadLedger();
@@ -59,13 +59,9 @@ function closeViolationModal() {
   $('violationModal').classList.remove('show');
 }
 
-// ═══ 三摞硬币渲染（原版 three-coin-stacks 技法）══════
+// ═══ 硬币渲染（卡片风格）══════
 
 function renderPiggy(gold, silver, copper) {
-  renderStack('gold', gold);
-  renderStack('silver', silver);
-  renderStack('copper', copper);
-
   $('goldCount').textContent = gold;
   $('silverCount').textContent = silver;
   $('copperCount').textContent = copper;
@@ -74,33 +70,12 @@ function renderPiggy(gold, silver, copper) {
   $('ledgerCopper').textContent = copper;
 }
 
-function renderStack(type, count) {
-  var stack = $(type + 'Stack');
-  if (!stack) return;
-  stack.innerHTML = '';
-  var shown = Math.min(count, 50);
-  var h = stack.offsetHeight || 250;
-  var step = Math.min(9, (h - 10) / Math.max(1, shown - 1));
-  if (step < 4) step = 4;
-
-  for (var i = 0; i < shown; i++) {
-    var coin = document.createElement('span');
-    coin.className = 'coin ' + type;
-    coin.style.bottom = (i * step) + 'px';
-    stack.appendChild(coin);
-  }
-}
-
 function coinDropAnimation(type, count) {
-  var stack = $(type + 'Stack');
-  if (!stack) return;
-  var h = stack.offsetHeight || 250;
-  var coins = stack.querySelectorAll('.coin');
-  // 给最后 count 枚硬币加上动画 class
-  var len = coins.length;
-  for (var i = Math.max(0, len - count); i < len; i++) {
-    coins[i].classList.add('new');
-  }
+  var card = document.querySelector('.coin-card.' + type);
+  if (!card) return;
+  card.classList.remove('drop');
+  void card.offsetWidth; // 触发重绘
+  card.classList.add('drop');
 }
 
 // ── 主页 ────────────────────────────────────
@@ -108,6 +83,7 @@ function loadHome() {
   loadBalance();
   loadStreaks();
   loadTodayLog();
+  updateCheckStatus();
 }
 
 function loadBalance() {
@@ -126,6 +102,24 @@ function loadStreaks() {
   $('streakDinner').textContent = d.dinner > 0 ? '连续' + d.dinner + '天' : '';
 }
 
+function updateCheckStatus() {
+  // 检查今日打卡状态，显示/隐藏勾选标记
+  var r = parseResult(Android.getTransactions());
+  if (!r.ok) return;
+  var today = formatDate(new Date());
+  var done = { exercise:false, breakfast:false, dinner:false };
+  (r.data || []).forEach(function(t){
+    if (t.date === today) {
+      if (t.note.indexOf('运动') >= 0) done.exercise = true;
+      if (t.note.indexOf('早餐') >= 0 || t.note.indexOf('早饭') >= 0) done.breakfast = true;
+      if (t.note.indexOf('晚餐') >= 0 || t.note.indexOf('晚饭') >= 0) done.dinner = true;
+    }
+  });
+  $('btnExercise').classList.toggle('done', done.exercise);
+  $('btnBreakfast').classList.toggle('done', done.breakfast);
+  $('btnDinner').classList.toggle('done', done.dinner);
+}
+
 function loadTodayLog() {
   var r = parseResult(Android.getTransactions());
   if (!r.ok) return;
@@ -133,9 +127,14 @@ function loadTodayLog() {
   var txns = (r.data || []).filter(function(t){ return t.date === today; });
   var html = '';
   if (txns.length === 0) {
-    html = '<div class="hint" style="text-align:center;padding:8px">今天还没有记录</div>';
+    html = '<div class="hint" style="width:100%;text-align:center;padding:8px">今天还没有记录</div>';
   } else {
-    txns.forEach(function(t){ html += '<div class="log-item"><span>' + t.note + '</span></div>'; });
+    txns.forEach(function(t){
+      var icon = '🟢';
+      if (t.note.indexOf('违规') >= 0 || t.note.indexOf('罚') >= 0) icon = '🔴';
+      if (t.note.indexOf('消费') >= 0 || t.note.indexOf('扣') >= 0) icon = '🟡';
+      html += '<div class="record-item">' + icon + ' ' + t.note + '</div>';
+    });
   }
   $('todayLog').innerHTML = html;
 }
@@ -151,6 +150,7 @@ function quickCheckin(type) {
     loadBalance();
     loadStreaks();
     loadTodayLog();
+    updateCheckStatus();
     // 铜币投币动画
     setTimeout(function(){ coinDropAnimation('copper', 1); }, 100);
   } else {
@@ -226,6 +226,7 @@ function doExerciseCheckin() {
     loadBalance();
     loadStreaks();
     loadTodayLog();
+    updateCheckStatus();
     setTimeout(function(){ coinDropAnimation('copper', 2); }, 100);
   } else {
     toast(r.error);
@@ -250,9 +251,14 @@ function loadTxnList() {
   var txns = (r.data || []).slice().reverse().slice(0, 50);
   var html = '';
   if (txns.length === 0) {
-    html = '<div class="hint" style="text-align:center;padding:8px">还没有记录</div>';
+    html = '<div class="hint" style="width:100%;text-align:center;padding:8px">还没有记录</div>';
   } else {
-    txns.forEach(function(t){ html += '<div class="log-item"><span>' + t.date + ' ' + t.note + '</span></div>'; });
+    txns.forEach(function(t){
+      var icon = '🟢';
+      if (t.note.indexOf('违规') >= 0 || t.note.indexOf('罚') >= 0) icon = '🔴';
+      if (t.note.indexOf('消费') >= 0 || t.note.indexOf('扣') >= 0) icon = '🟡';
+      html += '<div class="record-item">' + icon + ' ' + t.date.slice(5) + ' ' + t.note + '</div>';
+    });
   }
   $('txnList').innerHTML = html;
 }
@@ -328,6 +334,7 @@ function doReportViolation(type, desc) {
     loadSettings();
     loadBalance();
     loadStreaks();
+    updateCheckStatus();
   } else {
     toast('操作失败');
   }

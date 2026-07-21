@@ -48,61 +48,58 @@
 <!-- ═══ 主页 ═══ -->
 <div id="page-home" class="page active">
   <div class="header">
-    <div class="date" id="todayDate"></div>
+    <div class="header-icon">☰</div>
+    <div class="title">· 运动存钱罐 ·</div>
+    <div class="header-icon">📅</div>
   </div>
 
-  <!-- 打卡区 -->
-  <div class="section">
-    <div class="section-title">今日打卡</div>
-    <div class="checkin-grid">
-      <button class="checkin-btn" id="btnExercise" onclick="openExercise()">
-        <span class="btn-icon">🏃</span>
-        <span class="btn-label">运动</span>
-        <span class="btn-streak" id="streakExercise"></span>
+  <div class="date" id="todayDate"></div>
+
+  <div class="pig">🐷</div>
+
+  <!-- 今日打卡 -->
+  <div class="card">
+    <h3>今日打卡</h3>
+    <div class="tasks">
+      <button class="task green" id="btnExercise" onclick="openExercise()">
+        <span>🏃</span>运动
+        <div class="check" id="checkExercise">✓</div>
+        <div class="streak" id="streakExercise"></div>
       </button>
-      <button class="checkin-btn" id="btnBreakfast" onclick="quickCheckin('breakfast')">
-        <span class="btn-icon">🍳</span>
-        <span class="btn-label">早饭</span>
-        <span class="btn-streak" id="streakBreakfast"></span>
+      <button class="task yellow" id="btnBreakfast" onclick="quickCheckin('breakfast')">
+        <span>🍳</span>早餐
+        <div class="check" id="checkBreakfast">✓</div>
+        <div class="streak" id="streakBreakfast"></div>
       </button>
-      <button class="checkin-btn" id="btnDinner" onclick="quickCheckin('dinner')">
-        <span class="btn-icon">🥗</span>
-        <span class="btn-label">晚饭</span>
-        <span class="btn-streak" id="streakDinner"></span>
+      <button class="task purple" id="btnDinner" onclick="quickCheckin('dinner')">
+        <span>🥗</span>晚餐
+        <div class="check" id="checkDinner">✓</div>
+        <div class="streak" id="streakDinner"></div>
       </button>
     </div>
   </div>
 
-  <!-- 三摞硬币 -->
-  <div class="section">
-    <div class="coin-board">
-        <div class="stack-wrap">
-          <div class="stack" id="goldStack"></div>
-          <div class="stack-label gold-label"><strong id="goldCount">0</strong><span>金币</span></div>
-        </div>
-        <div class="stack-wrap">
-          <div class="stack" id="silverStack"></div>
-          <div class="stack-label silver-label"><strong id="silverCount">0</strong><span>银币</span></div>
-        </div>
-        <div class="stack-wrap">
-          <div class="stack" id="copperStack"></div>
-          <div class="stack-label copper-label"><strong id="copperCount">0</strong><span>铜币</span></div>
-        </div>
-      </div>
+  <!-- 我的财富 -->
+  <div class="card">
+    <h3>我的财富</h3>
+    <div class="money">
+      <div class="coin-card gold"><div class="coin-emoji">🥇</div><div class="num" id="goldCount">0</div><div class="coin-label">金币</div></div>
+      <div class="coin-card silver"><div class="coin-emoji">🥈</div><div class="num" id="silverCount">0</div><div class="coin-label">银币</div></div>
+      <div class="coin-card copper"><div class="coin-emoji">🥉</div><div class="num" id="copperCount">0</div><div class="coin-label">铜币</div></div>
     </div>
   </div>
 
   <!-- 今日记录 -->
-  <div class="section">
-    <div class="section-title">今日</div>
-    <div id="todayLog" class="log-list"></div>
+  <div class="card">
+    <h3>今日记录</h3>
+    <div id="todayLog" class="record"></div>
   </div>
 </div>
 
 <!-- ═══ 账本页 ═══ -->
 <div id="page-ledger" class="page">
-  <div class="section">
-    <div class="section-title">本季度</div>
+  <div class="card">
+    <h3>本季度</h3>
     <div class="quarter-stats">
       <div class="stat"><span class="stat-label">总收入</span><span class="stat-val" id="qIncomeCopper">0铜</span></div>
       <div class="stat"><span class="stat-label">总支出</span><span class="stat-val" id="qExpenseCopper">0铜</span></div>
@@ -115,8 +112,8 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">消费登记</div>
+  <div class="card">
+    <h3>消费登记</h3>
     <div class="consume-form">
       <input type="text" id="expenseName" placeholder="买了什么" class="input">
       <div class="consume-amount-row">
@@ -127,13 +124,13 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">流水</div>
-    <div id="txnList" class="log-list"></div>
+  <div class="card">
+    <h3>流水</h3>
+    <div id="txnList" class="record"></div>
   </div>
 
-  <div class="section">
-    <div class="section-title">季度提现</div>
+  <div class="card">
+    <h3>季度提现</h3>
     <p class="hint">季度末点击提现，余额清零，手动转入余额宝。</p>
     <button class="btn-primary" onclick="doQuarterWithdraw()">生成报告并清零</button>
   </div>
@@ -141,27 +138,27 @@
 
 <!-- ═══ 设置页 ═══ -->
 <div id="page-settings" class="page">
-  <div class="section">
-    <div class="section-title">城市</div>
-    <input type="text" id="cityInput" class="input" placeholder="输入城市名，如 北京" >
+  <div class="card">
+    <h3>城市</h3>
+    <input type="text" id="cityInput" class="input" placeholder="输入城市名，如 北京">
     <button class="btn-small" style="margin-top:8px;" onclick="doSetCity()">保存</button>
   </div>
 
-  <div class="section">
-    <div class="section-title">提醒</div>
+  <div class="card">
+    <h3>提醒</h3>
     <div class="setting-row"><span>早餐 7:30</span><span class="hint">已开启</span></div>
     <div class="setting-row"><span>晚餐 19:30</span><span class="hint">已开启</span></div>
     <div class="setting-row"><span>运动 20:00</span><span class="hint">已开启</span></div>
   </div>
 
-  <div class="section">
-    <div class="section-title">社交豁免</div>
+  <div class="card">
+    <h3>社交豁免</h3>
     <div class="setting-row"><span>本月已用</span><span id="socUsed">0/3</span></div>
     <button class="btn-small" onclick="doSocialExempt()">使用豁免</button>
   </div>
 
-  <div class="section">
-    <div class="section-title">违规惩罚</div>
+  <div class="card">
+    <h3>违规惩罚</h3>
     <div class="setting-row"><span>本周期违规</span><span id="penCount">0次</span></div>
     <div class="setting-row"><span>下次罚金</span><span id="penNext" class="warn">¥10</span></div>
     <div class="setting-row"><span>周期剩余</span><span id="penDays">15天</span></div>
@@ -176,10 +173,10 @@
 </div>
 
 <!-- 底部导航 -->
-<nav class="tabbar">
-  <div class="tab active" onclick="switchPage('home')" id="tab-home">主页</div>
-  <div class="tab" onclick="switchPage('ledger')" id="tab-ledger">账本</div>
-  <div class="tab" onclick="switchPage('settings')" id="tab-settings">设置</div>
+<nav class="bottom">
+  <div class="nav-item active" onclick="switchPage('home')" id="tab-home">🏠<br>首页</div>
+  <div class="nav-item" onclick="switchPage('ledger')" id="tab-ledger">◔<br>账本</div>
+  <div class="nav-item" onclick="switchPage('settings')" id="tab-settings">👤<br>我的</div>
 </nav>
 
 <script src="app.js"></script>

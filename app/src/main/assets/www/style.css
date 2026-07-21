@@ -1,134 +1,259 @@
-/* 运动存钱罐 — 样式 v4 (三摞硬币) */
+/* 运动存钱罐 — 样式 v5 (设计稿风格) */
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
-  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: linear-gradient(155deg,#f8f4eb,#e7eee9); color: #222735; line-height: 1.6;
-  padding-bottom: 60px; -webkit-tap-highlight-color: transparent;
+  background:#fff8ef;
+  font-family:-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color:#24323b;
+  padding-bottom:70px;
+  -webkit-tap-highlight-color:transparent;
+  line-height:1.6;
 }
 
-.page { display:none; padding:16px; }
+/* 页面 */
+.page { display:none; }
 .page.active { display:block; }
 
-.header { display:flex; justify-content:center; align-items:center; margin-bottom:16px; }
-.date { font-size:18px; font-weight:700; }
-
-.section { background:rgba(255,255,255,.7); border:1px solid rgba(43,52,56,.1); border-radius:32px; padding:24px; margin-bottom:12px; }
-.section-title { font-size:14px; font-weight:700; color:#727a7d; margin-bottom:12px; }
-
-/* 打卡 */
-.checkin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-.checkin-btn {
-  background:#fff; border:2px solid #e0dcd6; border-radius:12px; padding:16px 8px;
-  display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
-  transition:all .2s; user-select:none;
+/* 顶部 */
+.header {
+  padding:28px 24px 12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
-.checkin-btn:active { transform:scale(0.95); }
-.checkin-btn.done { background:#e8f5e9; border-color:#4caf50; }
-.btn-icon { font-size:28px; }
-.btn-label { font-size:14px; font-weight:600; }
-.btn-streak { font-size:11px; color:#ff9800; min-height:16px; }
+.header-icon { font-size:22px; cursor:pointer; }
+.title { font-size:26px; font-weight:700; }
+.date { text-align:center; color:#777; margin-bottom:12px; font-size:15px; }
 
-/* 弹窗 */
+/* 小猪 */
+.pig {
+  height:180px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:120px;
+}
+
+/* 卡片 */
+.card {
+  background:white;
+  margin:14px 20px;
+  padding:20px;
+  border-radius:24px;
+  box-shadow:0 8px 25px rgba(0,0,0,.06);
+}
+.card h3 { margin:0 0 16px; font-size:18px; }
+
+/* 打卡任务 */
+.tasks { display:flex; gap:12px; }
+.task {
+  flex:1;
+  height:130px;
+  border-radius:20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:#edf7ef;
+  border:none;
+  font-size:14px;
+  cursor:pointer;
+  position:relative;
+  transition:all .2s;
+  font-family:inherit;
+  color:#24323b;
+}
+.task:active { transform:scale(0.95); }
+.task.green { background:#edf7ef; }
+.task.yellow { background:#fff6df; }
+.task.purple { background:#f5edff; }
+.task span { font-size:35px; }
+.task.done { opacity:0.6; }
+.task.done .check { display:flex; }
+
+.check {
+  margin-top:8px;
+  width:28px; height:28px;
+  border-radius:50%;
+  background:#46b96b;
+  color:white;
+  text-align:center;
+  line-height:28px;
+  font-size:14px;
+  display:none;
+}
+.streak {
+  font-size:11px;
+  color:#ff9800;
+  margin-top:4px;
+  min-height:14px;
+}
+
+/* 财富硬币 */
+.money { display:flex; gap:10px; }
+.coin-card {
+  flex:1;
+  text-align:center;
+  padding:15px 5px;
+  border-radius:18px;
+}
+.coin-card.gold { background:#fff3d5; }
+.coin-card.silver { background:#edf3fa; }
+.coin-card.copper { background:#ffe9df; }
+.coin-emoji { font-size:28px; }
+.num { font-size:28px; font-weight:700; margin:5px 0; }
+.coin-label { font-size:13px; color:#888; }
+
+/* 今日记录 */
+.record { display:flex; flex-wrap:wrap; gap:16px; }
+.record-item {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
+  color:#555;
+}
+
+/* ═══ 弹窗 ═══ */
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; }
 .modal.show { display:flex; align-items:center; justify-content:center; }
-.modal-content { background:#fff; border-radius:16px; padding:24px; width:85%; max-width:340px; }
+.modal-content {
+  background:#fff;
+  border-radius:24px;
+  padding:24px;
+  width:85%;
+  max-width:340px;
+  box-shadow:0 8px 25px rgba(0,0,0,.06);
+}
 .modal-title { font-size:18px; font-weight:700; text-align:center; margin-bottom:16px; }
+
 .ex-type { display:flex; gap:8px; margin-bottom:16px; }
-.ex-opt { flex:1; padding:10px; border:2px solid #e0e0e0; border-radius:8px; background:#fff; font-size:14px; cursor:pointer; }
+.ex-opt {
+  flex:1; padding:10px; border:2px solid #e0e0e0; border-radius:12px;
+  background:#fff; font-size:14px; cursor:pointer; font-family:inherit; color:#24323b;
+}
 .ex-opt.active { border-color:#4caf50; background:#e8f5e9; font-weight:700; }
+
 .ex-duration { display:flex; gap:8px; margin-bottom:16px; }
-.ex-dur { flex:1; padding:12px 4px; border:2px solid #e0e0e0; border-radius:8px; background:#fff; font-size:13px; cursor:pointer; }
+.ex-dur {
+  flex:1; padding:12px 4px; border:2px solid #e0e0e0; border-radius:12px;
+  background:#fff; font-size:13px; cursor:pointer; font-family:inherit; color:#24323b;
+}
 .ex-dur.active { border-color:#4caf50; background:#e8f5e9; }
+
 .ex-distance { margin-bottom:16px; }
 .ex-distance label { font-size:12px; color:#888; display:block; margin-bottom:6px; }
-.ex-distance input { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:16px; }
-
-/* ═══ 三摞硬币 ═══ */
-.coin-stage { }
-.grand-total { text-align:center; margin-bottom:20px; }
-.grand-total small { display:block; font-size:12px; color:#727a7d; letter-spacing:.12em; margin-bottom:4px; }
-.grand-total span { font-size:42px; font-weight:800; }
-.coin-board { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; align-items:end; border-bottom:3px solid rgba(50,59,60,.18); padding:8px 4px 0; }
-.stack-wrap { display:flex; flex-direction:column; align-items:center; }
-.stack { position:relative; width:min(100%,160px); height:250px; }
-.stack-label { text-align:center; margin-top:12px; }
-.stack-label strong { display:block; font-size:18px; }
-.stack-label span { color:#6a7377; font-size:12px; }
-.gold-label strong { color:#f2bd3f; }
-.silver-label strong { color:#b9c6d0; }
-.copper-label strong { color:#c97043; }
-
-/* 单枚硬币 */
-.coin {
-  position:absolute; left:0; width:100%; height:20px; border-radius:50%;
-  border:2px solid rgba(60,45,20,.22);
-  box-shadow:inset 0 -6px 0 rgba(72,52,23,.14),inset 0 3px 0 rgba(255,255,255,.42),0 1px 2px rgba(48,48,41,.16);
-  transition:bottom .28s ease;
+.ex-distance input {
+  width:100%; padding:10px; border:1px solid #ddd; border-radius:12px;
+  font-size:16px; font-family:inherit;
 }
-.coin.gold { background:#f2bd3f; }
-.coin.silver { background:#b9c6d0; }
-.coin.copper { background:#c97043; }
-.coin.new { animation:add .4s cubic-bezier(.2,.8,.3,1.25); }
-@keyframes add { from { translate:0 -80px; opacity:.2; } to { translate:0 0; opacity:1; } }
 
-/* 硬币数量标注 */
-.ledger-coins-row { display:flex; justify-content:center; gap:20px; margin-top:8px; }
-.coin-text { font-size:13px; font-weight:700; }
-.coin-text.gold { color:#f2bd3f; }
-.coin-text.silver { color:#b9c6d0; }
-.coin-text.copper { color:#c97043; }
+.rainy-hint {
+  text-align:center; padding:8px; margin-bottom:12px;
+  background:#e3f2fd; border-radius:12px; font-size:13px; color:#1565c0;
+}
+.manual-rainy {
+  display:flex; align-items:center; gap:6px; padding:8px; margin-bottom:12px;
+  background:#fff8e1; border-radius:12px; font-size:13px; color:#e65100; cursor:pointer;
+}
+.manual-rainy input { width:18px; height:18px; cursor:pointer; }
 
-/* 记录 */
-.log-list { max-height:300px; overflow-y:auto; }
-.log-item { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(50,59,60,.08); font-size:13px; }
-.log-item:last-child { border:none; }
+/* 违规列表 */
+.violation-list { margin-bottom:16px; }
+.violation-item {
+  padding:10px; margin-bottom:8px; background:#fff3e0; border-radius:12px;
+  font-size:13px; color:#e65100;
+}
 
-/* 输入 */
-.input { width:100%; padding:12px; border:1px solid rgba(43,52,56,.15); border-radius:8px; font-size:16px; margin-bottom:8px; background:#fff; }
-select.input { background:#fff; }
+/* ═══ 按钮 ═══ */
+.btn-primary {
+  width:100%; padding:14px; background:#4caf50; color:#fff;
+  border:none; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit;
+}
+.btn-primary:active { background:#43a047; }
+.btn-cancel {
+  width:100%; padding:14px; background:transparent; color:#888;
+  border:none; font-size:14px; margin-top:8px; cursor:pointer; font-family:inherit;
+}
+.btn-small {
+  padding:8px 16px; background:#f0f0f0; border:none; border-radius:10px;
+  font-size:13px; cursor:pointer; font-family:inherit; color:#24323b;
+}
+.btn-warn {
+  padding:10px 12px; background:#fff3e0; color:#e65100;
+  border:1px solid #ffb74d; border-radius:10px; font-size:13px; cursor:pointer; font-family:inherit;
+}
+.violation-btns { display:flex; gap:8px; }
+.violation-btns button { flex:1; }
+
+/* ═══ 输入 ═══ */
+.input {
+  width:100%; padding:12px; border:1px solid rgba(43,52,56,.15);
+  border-radius:12px; font-size:16px; margin-bottom:8px; background:#fff; font-family:inherit;
+}
 .consume-amount-row { display:flex; gap:8px; align-items:center; }
 .amount-input { flex:1; }
 .copper-eq { font-size:14px; color:#6a7377; white-space:nowrap; }
 
-/* 按钮 */
-.btn-primary { width:100%; padding:14px; background:#4caf50; color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; }
-.btn-primary:active { background:#43a047; }
-.btn-cancel { width:100%; padding:14px; background:transparent; color:#888; border:none; font-size:14px; margin-top:8px; cursor:pointer; }
-.btn-small { padding:8px 16px; background:#eee; border:none; border-radius:6px; font-size:13px; cursor:pointer; }
-.btn-warn { padding:10px 12px; background:#fff3e0; color:#e65100; border:1px solid #ffb74d; border-radius:6px; font-size:13px; cursor:pointer; }
-.violation-btns { display:flex; gap:8px; }
-.violation-btns button { flex:1; }
-
-/* 季度统计 */
+/* ═══ 账本 ═══ */
 .quarter-stats { display:flex; gap:12px; margin-bottom:8px; }
 .stat { flex:1; text-align:center; }
 .stat-label { display:block; font-size:12px; color:#6a7377; }
 .stat-val { display:block; font-size:18px; font-weight:700; margin-top:4px; }
 .stat.highlight .stat-val { color:#4caf50; }
 
-/* 设置行 */
-.setting-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(50,59,60,.08); font-size:14px; }
+.ledger-coins-row { display:flex; justify-content:center; gap:20px; margin-top:8px; }
+.coin-text { font-size:13px; font-weight:700; }
+.coin-text.gold { color:#f2bd3f; }
+.coin-text.silver { color:#b9c6d0; }
+.coin-text.copper { color:#c97043; }
+
+/* 流水列表 */
+.log-list { max-height:300px; overflow-y:auto; }
+.log-item {
+  display:flex; justify-content:space-between; padding:8px 0;
+  border-bottom:1px solid rgba(50,59,60,.08); font-size:13px;
+}
+.log-item:last-child { border:none; }
+
+/* ═══ 设置 ═══ */
+.setting-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1px solid rgba(50,59,60,.08); font-size:14px;
+}
 .setting-row:last-child { border:none; }
 .hint { font-size:12px; color:#999; }
 .warn { color:#f44336; font-weight:700; }
 hr { border:none; border-top:1px solid rgba(50,59,60,.08); margin:12px 0; }
 
-/* 底部导航 */
-.tabbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:#fff; border-top:1px solid #e0dcd6; height:56px; z-index:50; }
-.tab { flex:1; display:flex; align-items:center; justify-content:center; font-size:14px; color:#999; cursor:pointer; user-select:none; }
-.tab.active { color:#4caf50; font-weight:700; }
+/* ═══ 底部导航 ═══ */
+.bottom {
+  position:fixed; bottom:0; left:0; right:0;
+  display:flex; justify-content:space-around;
+  padding:18px; color:#888;
+  background:#fffaf3;
+  border-top:1px solid rgba(0,0,0,.06);
+  z-index:50;
+}
+.nav-item {
+  text-align:center;
+  font-size:13px;
+  cursor:pointer;
+  user-select:none;
+}
+.nav-item.active { color:#4caf50; font-weight:700; }
 
-/* Toast */
-.toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; z-index:200; opacity:0; transition:opacity .3s; pointer-events:none; }
+/* ═══ Toast ═══ */
+.toast {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.8); color:#fff; padding:10px 20px;
+  border-radius:20px; font-size:14px; z-index:200; opacity:0;
+  transition:opacity .3s; pointer-events:none;
+}
 .toast.show { opacity:1; }
 
-.rainy-hint { text-align:center; padding:8px; margin-bottom:12px; background:#e3f2fd; border-radius:8px; font-size:13px; color:#1565c0; }
-.manual-rainy { display:flex; align-items:center; gap:6px; padding:8px; margin-bottom:12px; background:#fff8e1; border-radius:8px; font-size:13px; color:#e65100; cursor:pointer; }
-.manual-rainy input { width:18px; height:18px; cursor:pointer; }
-
-@media (max-width:620px) {
-  .section { padding:18px 14px; }
-  .stack { height:210px; }
-  .grand-total span { font-size:34px; }
-  .coin { height:17px; }
+/* ═══ 投币动画 ═══ */
+@keyframes coinDrop {
+  from { transform:translateY(-60px) scale(0.8); opacity:0; }
+  to { transform:translateY(0) scale(1); opacity:1; }
 }
+.coin-card.drop .num { animation:coinDrop .4s ease; }
