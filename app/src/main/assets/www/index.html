@@ -21,6 +21,7 @@
 <div id="exerciseModal" class="modal">
   <div class="modal-content">
     <div class="modal-title">选择运动</div>
+    <div id="rainyHint" class="rainy-hint" style="display:none;">🌧️ 今日有雨，已转为室内运动</div>
     <div class="ex-type">
       <button class="ex-opt active" data-type="run" onclick="selectExType('run')">跑步</button>
       <button class="ex-opt" data-type="walk" onclick="selectExType('walk')">走路</button>
@@ -34,6 +35,9 @@
       <label>跑步距离(km)  ≥3额外+5铜</label>
       <input type="number" id="exDistance" placeholder="如 4" step="0.1" min="0">
     </div>
+    <label class="manual-rainy" id="manualRainyWrap" style="display:none;">
+      <input type="checkbox" id="manualRainy" onchange="onManualRainy()"> 今天实际下雨，走室内
+    </label>
     <button class="btn-primary" onclick="doExerciseCheckin()">确认打卡</button>
     <button class="btn-cancel" onclick="closeExercise()">取消</button>
   </div>
@@ -71,12 +75,7 @@
 
   <!-- 三摞硬币 -->
   <div class="section">
-    <div class="coin-stage">
-      <div class="grand-total">
-        <small>累计金额</small>
-        <span id="totalYuan">¥0.0</span>
-      </div>
-      <div class="coin-board">
+    <div class="coin-board">
         <div class="stack-wrap">
           <div class="stack" id="goldStack"></div>
           <div class="stack-label gold-label"><strong id="goldCount">0</strong><span>金币</span></div>
@@ -144,16 +143,8 @@
 <div id="page-settings" class="page">
   <div class="section">
     <div class="section-title">城市</div>
-    <select id="citySelect" class="input" onchange="doSetCity()">
-      <option value="beijing">北京</option>
-      <option value="shanghai">上海</option>
-      <option value="guangzhou">广州</option>
-      <option value="shenzhen">深圳</option>
-      <option value="chengdu">成都</option>
-      <option value="hangzhou">杭州</option>
-      <option value="wuhan">武汉</option>
-      <option value="xian">西安</option>
-    </select>
+    <input type="text" id="cityInput" class="input" placeholder="输入城市名，如 北京" >
+    <button class="btn-small" style="margin-top:8px;" onclick="doSetCity()">保存</button>
   </div>
 
   <div class="section">

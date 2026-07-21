@@ -66,8 +66,6 @@ function renderPiggy(gold, silver, copper) {
   renderStack('silver', silver);
   renderStack('copper', copper);
 
-  var total = gold * 10 + silver + copper * 0.1;
-  $('totalYuan').textContent = '¥' + total.toFixed(1);
   $('goldCount').textContent = gold;
   $('silverCount').textContent = silver;
   $('copperCount').textContent = copper;
@@ -144,7 +142,7 @@ function loadTodayLog() {
 
 // ── 打卡 ────────────────────────────────────
 function quickCheckin(type) {
-  var r = parseResult(Android.checkin(type, '', 0, 0));
+  var r = parseResult(Android.checkin(type, '', 0, 0, false));
   if (r.ok) {
     var d = r.data;
     toast('+' + d.coins + '铜 (x' + d.multiplier + ')');
@@ -160,14 +158,55 @@ function quickCheckin(type) {
   }
 }
 
-function openExercise() { $('exerciseModal').classList.add('show'); }
+var isManualRainy = false;
+
+function openExercise() {
+  $('exerciseModal').classList.add('show');
+  isManualRainy = false;
+  $('manualRainy').checked = false;
+
+  // 查天气，雨天自动锁成室内运动
+  var r = parseResult(Android.getWeatherStatus());
+  if (r.ok && r.data.rainy) {
+    // API 判断雨天 → 自动锁定
+    $('rainyHint').style.display = 'block';
+    $('manualRainyWrap').style.display = 'none';
+    selectedExType = 'indoor';
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-opt'), function(b){ b.disabled = true; b.style.opacity = 0.4; });
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-dur'), function(b){ b.disabled = true; b.style.opacity = 0.4; });
+    $('exDistanceWrap').style.display = 'none';
+  } else {
+    // API 判断非雨天 → 允许手动覆盖
+    $('rainyHint').style.display = 'none';
+    $('manualRainyWrap').style.display = 'flex';
+    selectExType('run');
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-opt'), function(b){ b.disabled = false; b.style.opacity = 1; });
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-dur'), function(b){ b.disabled = false; b.style.opacity = 1; });
+    $('exDistanceWrap').style.display = 'block';
+  }
+}
 function closeExercise() { $('exerciseModal').classList.remove('show'); }
+
+function onManualRainy() {
+  isManualRainy = $('manualRainy').checked;
+  if (isManualRainy) {
+    selectedExType = 'indoor';
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-opt'), function(b){ b.disabled = true; b.style.opacity = 0.4; });
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-dur'), function(b){ b.disabled = true; b.style.opacity = 0.4; });
+    $('exDistanceWrap').style.display = 'none';
+  } else {
+    selectExType('run');
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-opt'), function(b){ b.disabled = false; b.style.opacity = 1; });
+    Array.prototype.forEach.call(document.querySelectorAll('.ex-dur'), function(b){ b.disabled = false; b.style.opacity = 1; });
+    $('exDistanceWrap').style.display = 'block';
+  }
+}
 
 function selectExType(type) {
   selectedExType = type;
   document.querySelectorAll('.ex-opt').forEach(function(b){ b.classList.remove('active'); });
   document.querySelector('.ex-opt[data-type="' + type + '"]').classList.add('active');
-  $('exDistanceWrap').style.display = type === 'walk' ? 'none' : 'block';
+  $('exDistanceWrap').style.display = (type === 'walk' || type === 'indoor') ? 'none' : 'block';
 }
 
 function selectExDur(dur) {
@@ -178,7 +217,7 @@ function selectExDur(dur) {
 
 function doExerciseCheckin() {
   var dist = parseFloat($('exDistance').value) || 0;
-  var r = parseResult(Android.checkin('exercise', selectedExType, selectedExDur, dist));
+  var r = parseResult(Android.checkin('exercise', selectedExType, selectedExDur, dist, isManualRainy));
   if (r.ok) {
     var d = r.data;
     toast('+' + d.coins + '铜 (x' + d.multiplier + ')');
@@ -251,7 +290,7 @@ function doQuarterWithdraw() {
 // ── 设置 ────────────────────────────────────
 function loadSettings() {
   var city = Android.getCity();
-  $('citySelect').value = city;
+  $('cityInput').value = city;
 
   var sr = parseResult(Android.getSocialExemptStatus());
   if (sr.ok) $('socUsed').textContent = sr.data.used + '/3';
@@ -265,7 +304,8 @@ function loadSettings() {
 }
 
 function doSetCity() {
-  var city = $('citySelect').value;
+  var city = $('cityInput').value.trim();
+  if (!city) { toast('输入城市名'); return; }
   Android.setCity(city);
   toast('城市已更新');
 }

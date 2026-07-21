@@ -236,6 +236,49 @@ object AutoPenalty {
     }
 }
 
+// ── 天气查询 ──────────────────────────────────────────
+object WeatherHelper {
+    private var cachedRainy: Boolean? = null
+    private var cacheDate: String = ""
+
+    fun clearCache() {
+        cachedRainy = null
+        cacheDate = ""
+    }(city: String): Boolean {
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+
+        // 同一天只查一次
+        if (cachedRainy != null && cacheDate == today) return cachedRainy!!
+
+        cachedRainy = try {
+            val url = java.net.URL("https://uapis.cn/api/v1/misc/weather?city=$city")
+            val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 5000
+                readTimeout = 5000
+            }
+            val code = conn.responseCode
+            if (code != 200) {
+                conn.disconnect()
+                return false
+            }
+            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            conn.disconnect()
+
+            // 解析 JSON 中的 weather 字段
+            val json = org.json.JSONObject(body)
+            val weather = json.optString("weather", "")
+            // 天气文本含“雨”即为雨天
+            weather.contains("雨")
+        } catch (e: Exception) {
+            false
+        }
+
+        cacheDate = today
+        return cachedRainy!!
+    }
+}
+
 // ── 提醒通知 ──────────────────────────────────────────
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

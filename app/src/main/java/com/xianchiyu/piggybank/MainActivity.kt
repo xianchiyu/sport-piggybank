@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun checkin(type: String, exerciseType: String, duration: Int, distance: Float): String {
+        fun checkin(type: String, exerciseType: String, duration: Int, distance: Float, manualRainy: Boolean): String {
             val today = todayStr()
 
             val lastDate = when (type) {
@@ -79,6 +79,9 @@ class MainActivity : AppCompatActivity() {
                 else -> return err("未知任务类型: $type")
             }
             if (lastDate == today) return err("今天已经打过此卡")
+
+            // 手动覆盖优先于 API 判断
+            val isRainyToday = manualRainy || WeatherHelper.isRainy(PiggyData.city)
 
             val yesterday = yesterdayStr()
             val prevStreak = when (type) {
@@ -90,7 +93,7 @@ class MainActivity : AppCompatActivity() {
             val newStreak = if (lastDate == yesterday) prevStreak + 1 else 1
 
             val baseCoins = when (type) {
-                "exercise" -> CoinUtils.exerciseCoins(exerciseType, duration, distance, false)
+                "exercise" -> CoinUtils.exerciseCoins(exerciseType, duration, distance, isRainyToday)
                 "breakfast" -> 3
                 "dinner" -> 3
                 else -> 0
@@ -276,23 +279,46 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun getAutoViolations(): String {
-            val firstUse = PiggyData.firstUseDate
-            if (firstUse.isEmpty()) {
-                PiggyData.firstUseDate = todayStr()
+            val today = todayStr()
+
+            // 同一天只检测一次
+            if (PiggyData.autoCheckDate == today) {
                 return ok(JSONObject().put("violations", JSONArray()))
             }
+            PiggyData.autoCheckDate = today
+
+            // 首次使用：记录安装日，不触发任何违规
+            val firstUse = PiggyData.firstUseDate
+            if (firstUse.isEmpty()) {
+                PiggyData.firstUseDate = today
+                return ok(JSONObject().put("violations", JSONArray()))
+            }
+
+            // 安装当天不检测（给用户一个缓冲日）
+            if (today == firstUse) {
+                return ok(JSONObject().put("violations", JSONArray()))
+            }
+
             val yesterday = yesterdayStr()
-            val today = todayStr()
             val violations = JSONArray()
-            if (PiggyData.lastExerciseDate != yesterday && PiggyData.lastExerciseDate != today) {
+
+            // 只检测曾经打过卡的项：lastDate 非空但昨天和今天都没打 → 违规
+            if (PiggyData.lastExerciseDate.isNotEmpty()
+                && PiggyData.lastExerciseDate != yesterday
+                && PiggyData.lastExerciseDate != today) {
                 violations.put("昨天未运动打卡")
             }
-            if (PiggyData.lastBreakfastDate != yesterday && PiggyData.lastBreakfastDate != today) {
+            if (PiggyData.lastBreakfastDate.isNotEmpty()
+                && PiggyData.lastBreakfastDate != yesterday
+                && PiggyData.lastBreakfastDate != today) {
                 violations.put("昨天未早餐打卡")
             }
-            if (PiggyData.lastDinnerDate != yesterday && PiggyData.lastDinnerDate != today) {
+            if (PiggyData.lastDinnerDate.isNotEmpty()
+                && PiggyData.lastDinnerDate != yesterday
+                && PiggyData.lastDinnerDate != today) {
                 violations.put("昨天未晚餐打卡")
             }
+
             return ok(JSONObject().put("violations", violations))
         }
 
@@ -304,7 +330,15 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun setCity(city: String): String {
             PiggyData.city = city
+            // 城市变了，清空天气缓存
+            WeatherHelper.clearCache()
             return ok(JSONObject().put("city", city))
+        }
+
+        @JavascriptInterface
+        fun getWeatherStatus(): String {
+            val rainy = WeatherHelper.isRainy(PiggyData.city)
+            return ok(JSONObject().put("rainy", rainy))
         }
 
         private fun addTransaction(type: String, subtype: String, amount: Float, note: String) {
