@@ -101,6 +101,10 @@ class MainActivity : AppCompatActivity() {
             val mult = CoinUtils.multiplier(newStreak)
             val coinsEarned = (baseCoins * mult).toInt()
 
+            val oldCopper = PiggyData.copper
+            val oldSilver = PiggyData.silver
+            val oldGold = PiggyData.gold
+
             val (c, s, g) = CoinUtils.autoMerge(
                 PiggyData.copper + coinsEarned,
                 PiggyData.silver,
@@ -128,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             val yuan = coinsEarned * 0.1f
             PiggyData.quarterIncome += yuan
 
-            addTransaction("income", type, yuan, "${typeLabel(type)} +${coinsEarned}铜(x${mult})")
+            addTransaction("income", type, yuan, "${typeLabel(type)} +${coinsEarned}铜(x${mult})", Triple(g - oldGold, s - oldSilver, c - oldCopper))
 
             return ok(JSONObject().apply {
                 put("coins", coinsEarned)
@@ -144,6 +148,9 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun consume(amount: Float, note: String): String {
             val copperNeeded = (amount * 10).toInt()
+            val oldCopper = PiggyData.copper
+            val oldSilver = PiggyData.silver
+            val oldGold = PiggyData.gold
             val result = CoinUtils.spend(
                 PiggyData.copper, PiggyData.silver, PiggyData.gold, copperNeeded
             )
@@ -155,7 +162,7 @@ class MainActivity : AppCompatActivity() {
             PiggyData.gold = g
 
             PiggyData.quarterExpense += amount
-            addTransaction("expense", "purchase", -amount, note)
+            addTransaction("expense", "purchase", -amount, note, Triple(g - oldGold, s - oldSilver, c - oldCopper))
 
             return ok(JSONObject().apply {
                 put("copper", c)
@@ -168,6 +175,11 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun reportViolation(type: String, description: String): String {
             val today = todayStr()
+
+            // 晚餐社交豁免：当天用了豁免，手动上报也跳过
+            if (type == "dinner" && PiggyData.socialExemptDate == today) {
+                return err("今天已用社交豁免，晚餐免罚")
+            }
 
             val penStart = PiggyData.penaltyPeriodStart
             if (penStart.isEmpty() || daysBetween(penStart, today) >= 15) {
@@ -183,7 +195,7 @@ class MainActivity : AppCompatActivity() {
                 "dinner" -> PiggyData.dinnerStreak = 0
             }
 
-            addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (¥$cashPenalty)")
+            addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (¥$cashPenalty)", Triple(0, 0, 0))
 
             return ok(JSONObject().apply {
                 put("cashPenalty", cashPenalty)
@@ -194,13 +206,17 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun useSocialExempt(): String {
-            val month = todayStr().substring(0, 7)
+            val today = todayStr()
+            val month = today.substring(0, 7)
             if (PiggyData.socialExemptMonth != month) {
                 PiggyData.socialExemptMonth = month
                 PiggyData.socialExemptUsed = 0
             }
             if (PiggyData.socialExemptUsed >= 3) return err("本月社交豁免次数已用完")
+            if (PiggyData.socialExemptDate == today) return err("今天已经用过社交豁免了")
             PiggyData.socialExemptUsed += 1
+            PiggyData.socialExemptDate = today
+            addTransaction("exempt", "social_exempt", 0f, "晚餐社交豁免(保留连续天数)")
             return ok(JSONObject().apply {
                 put("used", PiggyData.socialExemptUsed)
                 put("remaining", 3 - PiggyData.socialExemptUsed)
@@ -209,7 +225,8 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun getSocialExemptStatus(): String {
-            val month = todayStr().substring(0, 7)
+            val today = todayStr()
+            val month = today.substring(0, 7)
             if (PiggyData.socialExemptMonth != month) {
                 PiggyData.socialExemptMonth = month
                 PiggyData.socialExemptUsed = 0
@@ -217,6 +234,7 @@ class MainActivity : AppCompatActivity() {
             return ok(JSONObject().apply {
                 put("used", PiggyData.socialExemptUsed)
                 put("remaining", 3 - PiggyData.socialExemptUsed)
+                put("todayUsed", PiggyData.socialExemptDate == today)
             })
         }
 
@@ -265,10 +283,11 @@ class MainActivity : AppCompatActivity() {
             }
             PiggyData.quarterIncome = 0f
             PiggyData.quarterExpense = 0f
+            val withdrawCoin = Triple(-PiggyData.gold, -PiggyData.silver, -PiggyData.copper)
             PiggyData.copper = 0
             PiggyData.silver = 0
             PiggyData.gold = 0
-            addTransaction("withdraw", "quarter_withdraw", balance, "季度提现: ¥$balance")
+            addTransaction("withdraw", "quarter_withdraw", balance, "季度提现: ¥$balance", withdrawCoin)
             return ok(report)
         }
 
@@ -285,41 +304,37 @@ class MainActivity : AppCompatActivity() {
             if (PiggyData.autoCheckDate == today) {
                 return ok(JSONObject().put("violations", JSONArray()))
             }
-            PiggyData.autoCheckDate = today
 
             // 首次使用：记录安装日，不触发任何违规
             val firstUse = PiggyData.firstUseDate
             if (firstUse.isEmpty()) {
                 PiggyData.firstUseDate = today
+                PiggyData.autoCheckDate = today
                 return ok(JSONObject().put("violations", JSONArray()))
             }
 
             // 安装当天不检测（给用户一个缓冲日）
             if (today == firstUse) {
+                PiggyData.autoCheckDate = today
                 return ok(JSONObject().put("violations", JSONArray()))
             }
 
             val yesterday = yesterdayStr()
-            val violations = JSONArray()
 
-            // 只检测曾经打过卡的项：lastDate 非空但昨天和今天都没打 → 违规
-            if (PiggyData.lastExerciseDate.isNotEmpty()
-                && PiggyData.lastExerciseDate != yesterday
-                && PiggyData.lastExerciseDate != today) {
-                violations.put("昨天未运动打卡")
-            }
-            if (PiggyData.lastBreakfastDate.isNotEmpty()
-                && PiggyData.lastBreakfastDate != yesterday
-                && PiggyData.lastBreakfastDate != today) {
-                violations.put("昨天未早餐打卡")
-            }
-            if (PiggyData.lastDinnerDate.isNotEmpty()
-                && PiggyData.lastDinnerDate != yesterday
-                && PiggyData.lastDinnerDate != today) {
-                violations.put("昨天未晚餐打卡")
-            }
+            // 调用 AutoPenalty 执行检测 + 惩罚（含社交豁免逻辑）
+            val violations = AutoPenalty.check(today, yesterday)
 
-            return ok(JSONObject().put("violations", violations))
+            val arr = JSONArray()
+            violations.forEach { v ->
+                if (v.exempted) {
+                    arr.put("${v.desc} 已用社交豁免，免罚金，连续天数保留")
+                } else {
+                    arr.put("${v.desc} 违规(现金罚金¥${v.cashPenalty}) 连续天数已清零")
+                    addTransaction("penalty", "penalty_cash", -v.cashPenalty.toFloat(),
+                        "自动违规: ${v.desc} (¥${v.cashPenalty})", Triple(0, 0, 0))
+                }
+            }
+            return ok(JSONObject().put("violations", arr))
         }
 
         @JavascriptInterface
@@ -341,7 +356,7 @@ class MainActivity : AppCompatActivity() {
             return ok(JSONObject().put("rainy", rainy as Any))
         }
 
-        private fun addTransaction(type: String, subtype: String, amount: Float, note: String) {
+        private fun addTransaction(type: String, subtype: String, amount: Float, note: String, coinChange: Triple<Int, Int, Int>? = null) {
             val arr = JSONArray(PiggyData.transactions)
             arr.put(JSONObject().apply {
                 put("date", todayStr())
@@ -350,6 +365,13 @@ class MainActivity : AppCompatActivity() {
                 put("amount", amount)
                 put("note", note)
                 put("time", System.currentTimeMillis())
+                if (coinChange != null) {
+                    put("coinChange", JSONObject().apply {
+                        put("gold", coinChange.first)
+                        put("silver", coinChange.second)
+                        put("copper", coinChange.third)
+                    })
+                }
             })
             val result = JSONArray()
             val start = maxOf(0, arr.length() - 200)

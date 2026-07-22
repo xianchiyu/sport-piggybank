@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -7,177 +7,215 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<!-- 违规弹窗 -->
-<div id="violationModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-title">⚠️ 发现违规</div>
-    <div id="violationList" class="violation-list"></div>
-    <button class="btn-primary" onclick="closeViolationModal()">知道了</button>
-  </div>
-</div>
-
-<!-- 运动选项弹窗 -->
-<div id="exerciseModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-title">选择运动</div>
-    <div id="rainyHint" class="rainy-hint" style="display:none;">🌧️ 今日有雨，已转为室内运动</div>
-    <div class="ex-type">
-      <button class="ex-opt active" data-type="run" onclick="selectExType('run')">跑步</button>
-      <button class="ex-opt" data-type="walk" onclick="selectExType('walk')">走路</button>
-    </div>
-    <div class="ex-duration">
-      <button class="ex-dur" data-dur="10" onclick="selectExDur(10)">10分钟</button>
-      <button class="ex-dur" data-dur="20" onclick="selectExDur(20)">20分钟</button>
-      <button class="ex-dur active" data-dur="30" onclick="selectExDur(30)">30分钟</button>
-    </div>
-    <div class="ex-distance" id="exDistanceWrap">
-      <label>跑步距离(km)  ≥3额外+5铜</label>
-      <input type="number" id="exDistance" placeholder="如 4" step="0.1" min="0">
-    </div>
-    <label class="manual-rainy" id="manualRainyWrap" style="display:none;">
-      <input type="checkbox" id="manualRainy" onchange="onManualRainy()"> 今天实际下雨，走室内
-    </label>
-    <button class="btn-primary" onclick="doExerciseCheckin()">确认打卡</button>
-    <button class="btn-cancel" onclick="closeExercise()">取消</button>
-  </div>
-</div>
-
 <div id="toast" class="toast"></div>
+<div id="violationModal" class="modal">
+<div class="modal-content">
+<div class="modal-title">⚠️ 发现违规</div>
+<div id="violationList" class="violation-list"></div>
+<button class="btn-primary" onclick="closeViolationModal()">知道了</button>
+</div>
+</div>
+<div id="exerciseModal" class="modal">
+<div class="modal-content">
+<div id="rainyHint" class="rainy-hint" style="display:none;">🌧️ 今日有雨，已转为室内运动</div>
+<div class="modal-title">运动打卡</div>
+<div class="ex-type">
+<button class="ex-opt active" data-type="run" onclick="selectExType('run')">跑步</button>
+<button class="ex-opt" data-type="walk" onclick="selectExType('walk')">走路</button>
+</div>
+<div class="ex-duration">
+<button class="ex-dur" data-dur="10" onclick="selectExDur(10)">10分钟</button>
+<button class="ex-dur" data-dur="20" onclick="selectExDur(20)">20分钟</button>
+<button class="ex-dur active" data-dur="30" onclick="selectExDur(30)">30分钟</button>
+</div>
+<div class="ex-distance" id="exDistanceWrap">
+<label>跑步距离(km) ≥3额外+5铜</label>
+<input type="number" id="exDistance" placeholder="如 4" step="0.1" min="0">
+</div>
+<label class="manual-rainy" id="manualRainyWrap" style="display:none;">
+<input type="checkbox" id="manualRainy" onchange="onManualRainy()"> 今天实际下雨，走室内
+</label>
+<button class="btn-primary" onclick="doExerciseCheckin()">确认打卡</button>
+<button class="btn-cancel" onclick="closeExercise()">取消</button>
+</div>
+</div>
 
-<!-- ═══ 主页 ═══ -->
 <div id="page-home" class="page active">
-  <div class="header">
-    <div class="header-icon">☰</div>
-    <div class="title">· 运动存钱罐 ·</div>
-    <div class="header-icon">📅</div>
-  </div>
-
-  <div class="date" id="todayDate"></div>
-
-  <div class="pig">🐷</div>
-
-  <!-- 今日打卡 -->
-  <div class="card">
-    <h3>今日打卡</h3>
-    <div class="tasks">
-      <button class="task green" id="btnExercise" onclick="openExercise()">
-        <span>🏃</span>运动
-        <div class="check" id="checkExercise">✓</div>
-        <div class="streak" id="streakExercise"></div>
-      </button>
-      <button class="task yellow" id="btnBreakfast" onclick="quickCheckin('breakfast')">
-        <span>🍳</span>早餐
-        <div class="check" id="checkBreakfast">✓</div>
-        <div class="streak" id="streakBreakfast"></div>
-      </button>
-      <button class="task purple" id="btnDinner" onclick="quickCheckin('dinner')">
-        <span>🥗</span>晚餐
-        <div class="check" id="checkDinner">✓</div>
-        <div class="streak" id="streakDinner"></div>
-      </button>
-    </div>
-  </div>
-
-  <!-- 我的财富 -->
-  <div class="card">
-    <h3>我的财富</h3>
-    <div class="money">
-      <div class="coin-card gold"><div class="coin-emoji">🥇</div><div class="num" id="goldCount">0</div><div class="coin-label">金币</div></div>
-      <div class="coin-card silver"><div class="coin-emoji">🥈</div><div class="num" id="silverCount">0</div><div class="coin-label">银币</div></div>
-      <div class="coin-card copper"><div class="coin-emoji">🥉</div><div class="num" id="copperCount">0</div><div class="coin-label">铜币</div></div>
-    </div>
-  </div>
-
-  <!-- 今日记录 -->
-  <div class="card">
-    <h3>今日记录</h3>
-    <div id="todayLog" class="record"></div>
-  </div>
+<div class="piggy-area">
+<img class="piggy-img" src="img/hero.png" alt="小猪存钱罐">
 </div>
 
-<!-- ═══ 账本页 ═══ -->
-<div id="page-ledger" class="page">
-  <div class="card">
-    <h3>本季度</h3>
-    <div class="quarter-stats">
-      <div class="stat"><span class="stat-label">总收入</span><span class="stat-val" id="qIncomeCopper">0铜</span></div>
-      <div class="stat"><span class="stat-label">总支出</span><span class="stat-val" id="qExpenseCopper">0铜</span></div>
-      <div class="stat highlight"><span class="stat-label">余额</span><span class="stat-val" id="qBalanceCopper">0铜</span></div>
-    </div>
-    <div class="ledger-coins-row">
-      <span class="coin-text gold">金 <span id="ledgerGold">0</span></span>
-      <span class="coin-text silver">银 <span id="ledgerSilver">0</span></span>
-      <span class="coin-text copper">铜 <span id="ledgerCopper">0</span></span>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>消费登记</h3>
-    <div class="consume-form">
-      <input type="text" id="expenseName" placeholder="买了什么" class="input">
-      <div class="consume-amount-row">
-        <input type="number" id="expenseAmount" placeholder="金额(元)" class="input amount-input" step="0.1" min="0">
-        <span class="copper-eq" id="copperEq">= 0铜</span>
-      </div>
-      <button class="btn-primary" onclick="doConsume()">扣币</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>流水</h3>
-    <div id="txnList" class="record"></div>
-  </div>
-
-  <div class="card">
-    <h3>季度提现</h3>
-    <p class="hint">季度末点击提现，余额清零，手动转入余额宝。</p>
-    <button class="btn-primary" onclick="doQuarterWithdraw()">生成报告并清零</button>
-  </div>
+<div class="section">
+<div class="section-title">今日打卡</div>
+<div class="tasks">
+<button class="task green" id="btnExercise" onclick="openExercise()">
+<img class="task-ico" src="img/ico_run.png" alt="运动">
+<span class="task-name">运动</span>
+<span class="check" id="checkExercise"><span class="check-ok">✓</span></span>
+</button>
+<button class="task yellow" id="btnBreakfast" onclick="quickCheckin('breakfast')">
+<img class="task-ico" src="img/ico_egg.png" alt="早餐">
+<span class="task-name">早餐</span>
+<span class="check" id="checkBreakfast"><span class="check-ok">✓</span></span>
+</button>
+<button class="task purple" id="btnDinner" onclick="quickCheckin('dinner')">
+<img class="task-ico" src="img/ico_lunch.png" alt="晚餐">
+<span class="task-name">晚餐</span>
+<span class="check" id="checkDinner"><span class="check-ok">✓</span></span>
+</button>
+</div>
 </div>
 
-<!-- ═══ 设置页 ═══ -->
-<div id="page-settings" class="page">
-  <div class="card">
-    <h3>城市</h3>
-    <input type="text" id="cityInput" class="input" placeholder="输入城市名，如 北京">
-    <button class="btn-small" style="margin-top:8px;" onclick="doSetCity()">保存</button>
-  </div>
-
-  <div class="card">
-    <h3>提醒</h3>
-    <div class="setting-row"><span>早餐 7:30</span><span class="hint">已开启</span></div>
-    <div class="setting-row"><span>晚餐 19:30</span><span class="hint">已开启</span></div>
-    <div class="setting-row"><span>运动 20:00</span><span class="hint">已开启</span></div>
-  </div>
-
-  <div class="card">
-    <h3>社交豁免</h3>
-    <div class="setting-row"><span>本月已用</span><span id="socUsed">0/3</span></div>
-    <button class="btn-small" onclick="doSocialExempt()">使用豁免</button>
-  </div>
-
-  <div class="card">
-    <h3>违规惩罚</h3>
-    <div class="setting-row"><span>本周期违规</span><span id="penCount">0次</span></div>
-    <div class="setting-row"><span>下次罚金</span><span id="penNext" class="warn">¥10</span></div>
-    <div class="setting-row"><span>周期剩余</span><span id="penDays">15天</span></div>
-    <hr>
-    <p class="hint">手动上报违规（自动检测已开启，缺失打卡自动触发）</p>
-    <div class="violation-btns">
-      <button class="btn-warn" onclick="doReportViolation('exercise','未运动')">运动</button>
-      <button class="btn-warn" onclick="doReportViolation('breakfast','没做早饭')">早饭</button>
-      <button class="btn-warn" onclick="doReportViolation('dinner','晚餐不达标')">晚饭</button>
-    </div>
-  </div>
+<div class="section">
+<div class="section-title">我的财富</div>
+<div class="coins">
+<div class="coin-card gold">
+<img class="coin-img" src="img/coin_gold.png" alt="金币">
+<div class="coin-row"><span class="coin-num" id="goldCount">2</span><span class="coin-unit">枚</span></div>
+</div>
+<div class="coin-card silver">
+<img class="coin-img" src="img/coin_silver.png" alt="银币">
+<div class="coin-row"><span class="coin-num" id="silverCount">35</span><span class="coin-unit">枚</span></div>
+</div>
+<div class="coin-card copper">
+<img class="coin-img" src="img/coin_copper.png" alt="铜币">
+<div class="coin-row"><span class="coin-num" id="copperCount">68</span><span class="coin-unit">枚</span></div>
+</div>
+</div>
 </div>
 
-<!-- 底部导航 -->
-<nav class="bottom">
-  <div class="nav-item active" onclick="switchPage('home')" id="tab-home">🏠<br>首页</div>
-  <div class="nav-item" onclick="switchPage('ledger')" id="tab-ledger">◔<br>账本</div>
-  <div class="nav-item" onclick="switchPage('settings')" id="tab-settings">👤<br>我的</div>
-</nav>
+<div class="section">
+<div class="section-title">今日记录</div>
+<div class="card record-card">
+<div id="todayLog" class="record"></div>
+<img class="clipboard" src="img/clipboard.png" alt="clipboard">
+</div>
+</div>
+</div>
+
+<div id="page-stats" class="page">
+<div class="header">
+<div class="title">统计</div>
+</div>
+<div class="segment-control">
+<div class="seg-item active" data-range="7" onclick="switchRange(7)">7天</div>
+<div class="seg-item" data-range="30" onclick="switchRange(30)">30天</div>
+<div class="seg-item" data-range="all" onclick="switchRange('all')">全部</div>
+</div>
+
+<div class="section">
+<div class="section-title">打卡记录</div>
+<div class="checkin-grid" id="checkinGrid"></div>
+</div>
+
+<div class="section">
+<div class="section-title">财富统计</div>
+<div class="coins">
+<div class="coin-card gold">
+<img class="coin-img" src="img/coin_gold.png" alt="金币">
+<div class="coin-num" id="statGold">2</div>
+<div class="coin-unit">枚</div>
+</div>
+<div class="coin-card silver">
+<img class="coin-img" src="img/coin_silver.png" alt="银币">
+<div class="coin-num" id="statSilver">35</div>
+<div class="coin-unit">枚</div>
+</div>
+<div class="coin-card copper">
+<img class="coin-img" src="img/coin_copper.png" alt="铜币">
+<div class="coin-num" id="statCopper">68</div>
+<div class="coin-unit">枚</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title" id="trendTitle">最近7天趋势</div>
+<div class="chart-legend">
+<span class="lg"><img src="img/legend_gold.png" alt="">金币</span>
+<span class="lg"><img src="img/legend_silver.png" alt="">银币</span>
+<span class="lg"><img src="img/legend_copper.png" alt="">铜币</span>
+</div>
+<div class="chart-wrap">
+<svg id="trendChart" viewBox="0 0 340 220" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+</div>
+</div>
+
+<div id="page-my" class="page">
+<div class="header">
+<div class="title">我的</div>
+</div>
+
+<div class="section">
+<div class="section-title">季度统计</div>
+<div class="quarter-stats">
+<div class="stat"><span class="stat-label">总收入</span><span class="stat-val" id="qIncomeCopper">0铜</span></div>
+<div class="stat"><span class="stat-label">总支出</span><span class="stat-val" id="qExpenseCopper">0铜</span></div>
+<div class="stat highlight"><span class="stat-label">余额</span><span class="stat-val" id="qBalanceCopper">0铜</span></div>
+</div>
+<div class="ledger-coins-row">
+<span class="coin-text gold">金 <span id="ledgerGold">2</span></span>
+<span class="coin-text silver">银 <span id="ledgerSilver">35</span></span>
+<span class="coin-text copper">铜 <span id="ledgerCopper">68</span></span>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">消费</div>
+<div class="consume-form">
+<input type="text" id="expenseName" placeholder="买了什么" class="input">
+<div class="consume-amount-row">
+<input type="number" id="expenseAmount" placeholder="金额(元)" class="input amount-input" step="0.1" min="0">
+<span class="copper-eq" id="copperEq">= 0铜</span>
+</div>
+<button class="btn-primary" onclick="doConsume()">确认消费</button>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">季度提现</div>
+<button class="btn-primary" onclick="doQuarterWithdraw()">季度提现</button>
+</div>
+
+<div class="section">
+<div class="section-title">交易记录</div>
+<div class="log-list" id="txnList"></div>
+</div>
+
+<div class="section">
+<div class="section-title">设置</div>
+<div class="setting-row">
+<input type="text" id="cityInput" class="input" placeholder="输入城市名，如 北京">
+<button class="btn-small" style="margin-top:8px;" onclick="doSetCity()">保存</button>
+</div>
+<div class="setting-row"><span>早餐 7:30</span><span class="hint">已开启</span></div>
+<div class="setting-row"><span>晚餐 19:30</span><span class="hint">已开启</span></div>
+<div class="setting-row"><span>运动 20:00</span><span class="hint">已开启</span></div>
+<div class="setting-row"><span>下次罚金</span><span id="penNext" class="warn">¥10</span></div>
+<div class="setting-row"><span>违规次数</span><span id="penCount" class="hint">0次</span></div>
+<div class="setting-row"><span>剩余天数</span><span id="penDays" class="hint">15天</span></div>
+<div class="setting-row"><span>社交豁免</span><span id="socUsed" class="hint">0/3</span></div>
+<div class="hint" style="padding:4px 0 8px;">仅限晚餐，当天使用，免罚金并保留连续天数</div>
+<div class="setting-row" id="socTodayRow" style="display:none;"><span>今日状态</span><span id="socToday" class="warn">已使用</span></div>
+<button class="btn-warn" style="margin-top:10px;" onclick="doSocialExempt()">使用社交豁免</button>
+</div>
+</div>
+
+<div class="bottom-nav">
+<div class="nav-item active" onclick="switchPage('home')" id="tab-home">
+<svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 L12 4 L21 12 M5 10 V20 H19 V10"/></svg>
+<span class="nav-label">首页</span>
+</div>
+<div class="nav-item" onclick="switchPage('stats')" id="tab-stats">
+<svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12 A9 9 0 1 1 12 3 A9 9 0 0 1 21 12 Z"/><path d="M12 3 V12 L18 8"/></svg>
+<span class="nav-label">统计</span>
+</div>
+<div class="nav-item" onclick="switchPage('my')" id="tab-my">
+<svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20 C4 16 8 14 12 14 C16 14 20 16 20 20"/></svg>
+<span class="nav-label">我的</span>
+</div>
+</div>
 
 <script src="app.js"></script>
 </body>

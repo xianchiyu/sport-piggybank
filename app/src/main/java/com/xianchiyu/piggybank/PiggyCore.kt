@@ -75,6 +75,10 @@ object PiggyData {
         get() = prefs?.getInt("socUsed", 0) ?: 0
         set(v) { prefs?.edit()?.putInt("socUsed", v)?.apply() }
 
+    var socialExemptDate: String
+        get() = prefs?.getString("socExemptDate", "") ?: ""
+        set(v) { prefs?.edit()?.putString("socExemptDate", v)?.apply() }
+
     var city: String
         get() = prefs?.getString("city", "beijing") ?: "beijing"
         set(v) { prefs?.edit()?.putString("city", v)?.apply() }
@@ -181,8 +185,15 @@ object CoinUtils {
 
 // ── 自动违规检测 ─────────────────────────────────────
 object AutoPenalty {
-    fun check(today: String, yesterday: String): List<String> {
-        val violations = mutableListOf<String>()
+    data class Violation(
+        val type: String,
+        val desc: String,
+        val cashPenalty: Int,
+        val exempted: Boolean
+    )
+
+    fun check(today: String, yesterday: String): List<Violation> {
+        val violations = mutableListOf<Violation>()
 
         if (PiggyData.autoCheckDate == today) return violations
         PiggyData.autoCheckDate = today
@@ -198,7 +209,7 @@ object AutoPenalty {
         return violations
     }
 
-    private fun checkOne(type: String, yesterday: String, desc: String, out: MutableList<String>) {
+    private fun checkOne(type: String, yesterday: String, desc: String, out: MutableList<Violation>) {
         val lastDate = when (type) {
             "exercise" -> PiggyData.lastExerciseDate
             "breakfast" -> PiggyData.lastBreakfastDate
@@ -206,6 +217,12 @@ object AutoPenalty {
             else -> return
         }
         if (lastDate >= yesterday) return
+
+        // 晚餐社交豁免：当天用了豁免，次日自动检测跳过
+        if (type == "dinner" && PiggyData.socialExemptDate == yesterday) {
+            out.add(Violation(type, desc, 0, exempted = true))
+            return
+        }
 
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
         val periodStart = PiggyData.penaltyPeriodStart
@@ -232,7 +249,7 @@ object AutoPenalty {
             "dinner" -> PiggyData.dinnerStreak = 0
         }
 
-        out.add("$desc 违规(现金罚金¥$cashPenalty) 连续天数已清零")
+        out.add(Violation(type, desc, cashPenalty, exempted = false))
     }
 }
 
