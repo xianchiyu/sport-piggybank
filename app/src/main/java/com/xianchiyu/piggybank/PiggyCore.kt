@@ -1,14 +1,6 @@
-﻿package com.xianchiyu.piggybank
+package com.xianchiyu.piggybank
 
-import android.app.AlarmManager
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.os.Build
-import androidx.core.app.NotificationCompat
 
 // ── 数据模型 ──────────────────────────────────────────
 object PiggyData {
@@ -99,31 +91,6 @@ object PiggyData {
         get() = prefs?.getFloat("qExpense", 0f) ?: 0f
         set(v) { prefs?.edit()?.putFloat("qExpense", v)?.apply() }
 
-    // 闹钟时间（分钟数，0-1439）
-    var alarmBreakfast: Int
-        get() = prefs?.getInt("alarmBreakfast", 7 * 60 + 30) ?: (7 * 60 + 30)
-        set(v) { prefs?.edit()?.putInt("alarmBreakfast", v)?.apply() }
-
-    var alarmDinner: Int
-        get() = prefs?.getInt("alarmDinner", 19 * 60 + 30) ?: (19 * 60 + 30)
-        set(v) { prefs?.edit()?.putInt("alarmDinner", v)?.apply() }
-
-    var alarmExercise: Int
-        get() = prefs?.getInt("alarmExercise", 20 * 60) ?: (20 * 60)
-        set(v) { prefs?.edit()?.putInt("alarmExercise", v)?.apply() }
-
-    // 闹钟开关
-    var alarmBreakfastOn: Boolean
-        get() = prefs?.getBoolean("alarmBreakfastOn", true) ?: true
-        set(v) { prefs?.edit()?.putBoolean("alarmBreakfastOn", v)?.apply() }
-
-    var alarmDinnerOn: Boolean
-        get() = prefs?.getBoolean("alarmDinnerOn", true) ?: true
-        set(v) { prefs?.edit()?.putBoolean("alarmDinnerOn", v)?.apply() }
-
-    var alarmExerciseOn: Boolean
-        get() = prefs?.getBoolean("alarmExerciseOn", true) ?: true
-        set(v) { prefs?.edit()?.putBoolean("alarmExerciseOn", v)?.apply() }
 }
 
 // ── 币值计算工具 ──────────────────────────────────────
@@ -327,97 +294,5 @@ object WeatherHelper {
 
         cacheDate = today
         return cachedRainy!!
-    }
-}
-
-// ── 提醒通知 ──────────────────────────────────────────
-class ReminderReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        val type = intent.getStringExtra("type") ?: "exercise"
-        val msg = when (type) {
-            "breakfast" -> "该吃早饭了！打卡赚铜币"
-            "dinner" -> "晚餐时间！记得简单吃"
-            "exercise" -> "该运动了！去跑步或走路"
-            else -> "该打卡了！"
-        }
-
-        val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel("piggy", "运动存钱罐提醒", NotificationManager.IMPORTANCE_HIGH)
-            mgr.createNotificationChannel(channel)
-        }
-        val notif = NotificationCompat.Builder(context, "piggy")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("运动存钱罐")
-            .setContentText(msg)
-            .setAutoCancel(true)
-            .setVibrate(longArrayOf(0, 300, 200, 300))
-            .build()
-        mgr.notify(type.hashCode(), notif)
-    }
-}
-
-class BootReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            ReminderScheduler.scheduleAll(context)
-        }
-    }
-}
-
-object ReminderScheduler {
-    fun scheduleAll(context: Context) {
-        if (PiggyData.alarmBreakfastOn) {
-            schedule(context, PiggyData.alarmBreakfast / 60, PiggyData.alarmBreakfast % 60, "breakfast")
-        } else {
-            cancel(context, "breakfast")
-        }
-        if (PiggyData.alarmDinnerOn) {
-            schedule(context, PiggyData.alarmDinner / 60, PiggyData.alarmDinner % 60, "dinner")
-        } else {
-            cancel(context, "dinner")
-        }
-        if (PiggyData.alarmExerciseOn) {
-            schedule(context, PiggyData.alarmExercise / 60, PiggyData.alarmExercise % 60, "exercise")
-        } else {
-            cancel(context, "exercise")
-        }
-    }
-
-    fun schedule(context: Context, hour: Int, minute: Int, type: String) {
-        val calendar = java.util.Calendar.getInstance().apply {
-            set(java.util.Calendar.HOUR_OF_DAY, hour)
-            set(java.util.Calendar.MINUTE, minute)
-            set(java.util.Calendar.SECOND, 0)
-            if (timeInMillis <= System.currentTimeMillis()) {
-                add(java.util.Calendar.DAY_OF_MONTH, 1)
-            }
-        }
-
-        val intent = Intent(context, ReminderReceiver::class.java).apply {
-            putExtra("type", type)
-        }
-        val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        else PendingIntent.FLAG_UPDATE_CURRENT
-        val pi = PendingIntent.getBroadcast(context, type.hashCode(), intent, pendingFlags)
-
-        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        am.setRepeating(
-            AlarmManager.RTC_WAKEUP,
-            calendar.timeInMillis,
-            AlarmManager.INTERVAL_DAY,
-            pi
-        )
-    }
-
-    fun cancel(context: Context, type: String) {
-        val intent = Intent(context, ReminderReceiver::class.java)
-        val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        else PendingIntent.FLAG_UPDATE_CURRENT
-        val pi = PendingIntent.getBroadcast(context, type.hashCode(), intent, pendingFlags)
-        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        am.cancel(pi)
     }
 }

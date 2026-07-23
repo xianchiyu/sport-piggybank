@@ -12,27 +12,17 @@ catch(e) { return {ok:false, error:'解析失败'}; }
 function formatDate(d) {
 return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
-function pad2(n) { return String(n).padStart(2,'0'); }
 
 var selectedExType = 'run';
 var selectedExDur = 30;
 var isManualRainy = false;
 
 function init() {
-renderTodayDate();
 loadHome();
 checkAutoViolations();
 $('expenseAmount').addEventListener('input', updateCopperEq);
-window.__isMock = !window.Android;
 }
 
-function renderTodayDate() {
-var el = $('dateText');
-if (!el) return;
-var now = new Date();
-var w = ['日','一','二','三','四','五','六'];
-el.textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 星期' + w[now.getDay()];
-}
 
 function updateCopperEq() {
 var v = parseFloat($('expenseAmount').value) || 0;
@@ -93,17 +83,6 @@ renderPiggy(d.gold, d.silver, d.copper);
 loadStreaks();
 loadTodayLog();
 updateCheckStatus();
-} else {
-renderPiggy(2, 35, 68);
-var se = $('streakExercise'); if (se) se.textContent = '';
-var sb = $('streakBreakfast'); if (sb) sb.textContent = '';
-var sd = $('streakDinner'); if (sd) sd.textContent = '';
-$('todayLog').innerHTML =
-'<div class="record-item"><span style="color:#4caf50;font-weight:700;">✓</span>运动</div>' +
-'<div class="record-item"><span style="color:#4caf50;font-weight:700;">✓</span>早餐</div>';
-$('btnExercise').classList.add('done');
-$('btnBreakfast').classList.add('done');
-$('btnDinner').classList.add('pending');
 }
 }
 
@@ -162,8 +141,6 @@ if (window.Android) {
 var r = parseResult(Android.checkin(type, '', 0, 0, false));
 if (!r.ok) { toast(r.error); return; }
 toast('+' + r.data.coins + '铜 (x' + r.data.multiplier + ')');
-} else {
-toast('+' + (type === 'breakfast' ? '3' : '3') + '铜 (mock)');
 }
 var btn = type === 'breakfast' ? $('btnBreakfast') : $('btnDinner');
 btn.classList.add('done');
@@ -192,10 +169,6 @@ $('rainyHint').style.display='none';
 $('manualRainyWrap').style.display='flex';
 showNormalMode();
 }
-} else {
-$('rainyHint').style.display='none';
-$('manualRainyWrap').style.display='none';
-showNormalMode();
 }
 }
 function showIndoorMode() {
@@ -247,8 +220,6 @@ var r2 = parseResult(Android.getBalance());
 if (r2.ok) renderPiggy(r2.data.gold, r2.data.silver, r2.data.copper);
 loadStreaks();
 loadTodayLog();
-} else {
-toast('+' + (selectedExDur/10*3) + '铜 (mock)');
 }
 $('btnExercise').classList.add('done');
 $('btnExercise').classList.remove('pending');
@@ -262,13 +233,11 @@ if (window.Android) {
 var r = parseResult(Android.getTransactions());
 txns = (r.ok && r.data) ? r.data : [];
 } else {
-txns = generateMockTxns();
+txns = [];
 }
 if (window.Android) {
 var b = parseResult(Android.getBalance());
 if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
-} else {
-renderPiggy(2, 35, 68);
 }
 renderCheckinGrid(txns);
 $('trendTitle').textContent = '最近7天趋势';
@@ -424,15 +393,6 @@ $('penCount').textContent = pr.data.count + '次';
 $('penNext').textContent = '¥' + pr.data.nextPenalty;
 $('penDays').textContent = pr.data.daysLeft + '天';
 }
-} else {
-$('qIncomeCopper').textContent = '1230铜';
-$('qExpenseCopper').textContent = '420铜';
-$('qBalanceCopper').textContent = '810铜';
-$('cityInput').value = '北京';
-$('socUsed').textContent = '0/3';
-$('penCount').textContent = '0次';
-$('penNext').textContent = '¥10';
-$('penDays').textContent = '15天';
 }
 loadTxnList();
 }
@@ -442,10 +402,7 @@ if (window.Android) {
 var r = parseResult(Android.getTransactions());
 txns = (r.ok && r.data) ? r.data : [];
 } else {
-txns = generateMockTxns().concat([
-{ date: formatDate(new Date()), note: '消费 - 奶茶', type: 'expense', subtype: 'purchase' },
-{ date: formatDate(new Date()), note: '消费 - 零食', type: 'expense', subtype: 'purchase' }
-]);
+txns = [];
 }
 var list = txns.slice().reverse();
 var RECENT_DAYS = 7;
@@ -485,11 +442,6 @@ loadMy();
 } else {
 toast(r.error);
 }
-} else {
-toast('已扣 ' + name + ' (mock)');
-$('expenseName').value = '';
-$('expenseAmount').value = '';
-$('copperEq').textContent = '= 0铜';
 }
 }
 function doQuarterWithdraw() {
@@ -502,7 +454,7 @@ var b = parseResult(Android.getBalance());
 if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
 loadMy();
 } else { toast('提现失败'); }
-} else { toast('mock 提现完成'); }
+}
 }
 function doSetCity() {
 var city = $('cityInput').value.trim();
@@ -518,43 +470,7 @@ if (r.ok) {
 toast('晚餐社交豁免已生效，今晚免罚保留连续');
 loadMy();
 } else { toast(r.error); }
-} else { toast('mock 豁免'); }
 }
-function doReportViolation(type, desc) {
-if (!confirm('确认上报违规：' + desc + '？')) return;
-if (window.Android) {
-var r = parseResult(Android.reportViolation(type, desc));
-if (r.ok) {
-toast('违规！罚金¥' + r.data.cashPenalty);
-loadMy();
-var b = parseResult(Android.getBalance());
-if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
-} else { toast(r.error); }
-} else { toast('mock 违规已上报'); }
-}
-
-function generateMockTxns() {
-var txns = [];
-for (var i = 6; i >= 0; i--) {
-var d = new Date();
-d.setDate(d.getDate() - i);
-var ds = formatDate(d);
-txns.push({ date: ds, note: '运动 (跑步30min)', type: 'income', subtype: 'exercise', coinChange: { gold:0, silver:0, copper: i % 3 === 0 ? 15 : 10 } });
-if (i !== 2) txns.push({ date: ds, note: '早餐 (3铜)', type: 'income', subtype: 'breakfast', coinChange: { gold:0, silver:0, copper: 3 } });
-if (i === 6 || i === 3) txns.push({ date: ds, note: '晚餐 (3铜)', type: 'income', subtype: 'dinner', coinChange: { gold:0, silver:0, copper: 3 } });
-}
-for (var i = 29; i >= 7; i--) {
-var d2 = new Date();
-d2.setDate(d2.getDate() - i);
-var ds2 = formatDate(d2);
-if (Math.random() > 0.3) {
-txns.push({ date: ds2, note: '运动 (走路20min)', type: 'income', subtype: 'exercise', coinChange: { gold:0, silver:0, copper: 3 + Math.floor(Math.random()*3) } });
-}
-if (Math.random() > 0.4) {
-txns.push({ date: ds2, note: '早餐 (3铜)', type: 'income', subtype: 'breakfast', coinChange: { gold:0, silver:0, copper: 3 } });
-}
-}
-return txns;
 }
 
 init();

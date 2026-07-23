@@ -78,11 +78,6 @@ class MainActivity : Activity() {
 
         webView.loadUrl("file:///android_asset/www/index.html")
 
-        // ReminderScheduler 后台执行
-        Handler(mainLooper).post {
-            ReminderScheduler.scheduleAll(this)
-        }
-
         // 兜底：若 2s 内 onPageFinished 未触发（极端加载失败），强制恢复状态栏并淡入，避免永久卡在启动图
         Handler(mainLooper).postDelayed({
             restoreStatusBar()
@@ -309,45 +304,6 @@ class MainActivity : Activity() {
                 put("remaining", 3 - PiggyData.socialExemptUsed)
                 put("todayUsed", PiggyData.socialExemptDate == today)
             })
-        }
-
-        @JavascriptInterface
-        fun getAlarmSettings(): String {
-            return ok(JSONObject().apply {
-                put("breakfast", JSONObject().apply {
-                    put("time", PiggyData.alarmBreakfast)
-                    put("on", PiggyData.alarmBreakfastOn)
-                })
-                put("dinner", JSONObject().apply {
-                    put("time", PiggyData.alarmDinner)
-                    put("on", PiggyData.alarmDinnerOn)
-                })
-                put("exercise", JSONObject().apply {
-                    put("time", PiggyData.alarmExercise)
-                    put("on", PiggyData.alarmExerciseOn)
-                })
-            })
-        }
-
-        @JavascriptInterface
-        fun setAlarm(type: String, minutes: Int, on: Boolean): String {
-            when (type) {
-                "breakfast" -> {
-                    PiggyData.alarmBreakfast = minutes
-                    PiggyData.alarmBreakfastOn = on
-                }
-                "dinner" -> {
-                    PiggyData.alarmDinner = minutes
-                    PiggyData.alarmDinnerOn = on
-                }
-                "exercise" -> {
-                    PiggyData.alarmExercise = minutes
-                    PiggyData.alarmExerciseOn = on
-                }
-                else -> return err("未知闹钟类型")
-            }
-            ReminderScheduler.scheduleAll(this@MainActivity)
-            return ok(JSONObject().apply { put("success", true) })
         }
 
         @JavascriptInterface
