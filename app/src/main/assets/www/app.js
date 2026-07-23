@@ -112,9 +112,9 @@ function loadStreaks() {
 var r = parseResult(Android.getStreaks());
 if (!r.ok) return;
 var d = r.data;
-$('streakExercise').textContent = d.exercise > 0 ? '连续' + d.exercise + '天' : '';
-$('streakBreakfast').textContent = d.breakfast > 0 ? '连续' + d.breakfast + '天' : '';
-$('streakDinner').textContent = d.dinner > 0 ? '连续' + d.dinner + '天' : '';
+var el = $('streakExercise'); if (el) el.textContent = d.exercise > 0 ? '连续' + d.exercise + '天' : '';
+el = $('streakBreakfast'); if (el) el.textContent = d.breakfast > 0 ? '连续' + d.breakfast + '天' : '';
+el = $('streakDinner'); if (el) el.textContent = d.dinner > 0 ? '连续' + d.dinner + '天' : '';
 }
 
 function updateCheckStatus() {
