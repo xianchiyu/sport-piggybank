@@ -52,12 +52,13 @@ class MainActivity : Activity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 // 页面加载完成：恢复白色状态栏 + 深色图标，并淡入 WebView 覆盖启动图
-                window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                window.statusBarColor = Color.WHITE
+                restoreStatusBar()
                 webView.animate().alpha(1f).setDuration(150).start()
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                // 异常路径：同样恢复状态栏（不依赖 alpha 守卫），再淡入 WebView
+                restoreStatusBar()
                 if (webView.alpha < 1f) webView.animate().alpha(1f).setDuration(150).start()
             }
         }
@@ -81,10 +82,23 @@ class MainActivity : Activity() {
             ReminderScheduler.scheduleAll(this)
         }
 
-        // 兜底：若 2s 内 onPageFinished 未触发（极端加载失败），强制淡入，避免永久卡在启动图
+        // 兜底：若 2s 内 onPageFinished 未触发（极端加载失败），强制恢复状态栏并淡入，避免永久卡在启动图
         Handler(mainLooper).postDelayed({
+            restoreStatusBar()
             if (webView.alpha < 1f) webView.animate().alpha(1f).setDuration(150).start()
         }, 2000)
+    }
+
+    /**
+     * 恢复状态栏为正常白底浅色状态栏（深色图标）。
+     * 整体赋值 systemUiVisibility 会清除 LAYOUT_FULLSCREEN，退出全屏延伸模式，
+     * 避免状态栏区域与 WebView 顶部内容重叠。在 onPageFinished / onReceivedError /
+     * 2 秒超时兜底三处均调用，确保任意加载路径最终状态栏都健康。
+     */
+    private fun restoreStatusBar() {
+        // 整体赋值：清除 LAYOUT_FULLSCREEN（退出全屏延伸）+ 浅色状态栏（白底深色图标）
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        window.statusBarColor = Color.WHITE
     }
 
     override fun onBackPressed() {
