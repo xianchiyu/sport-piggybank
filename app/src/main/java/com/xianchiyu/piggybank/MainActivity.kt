@@ -95,8 +95,11 @@ class MainActivity : Activity() {
      * 2 秒超时兜底三处均调用，确保任意加载路径最终状态栏都健康。
      */
     private fun restoreStatusBar() {
-        // 整体赋值：清除 LAYOUT_FULLSCREEN（退出全屏延伸）+ 浅色状态栏（白底深色图标）
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        // 清除 LAYOUT_FULLSCREEN（退出全屏延伸）+ 保留 LAYOUT_STABLE（避免黑色空条）+ 浅色状态栏（白底深色图标）
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        )
         window.statusBarColor = Color.WHITE
     }
 
