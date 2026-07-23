@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
+import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -27,8 +28,12 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 启动阶段：状态栏颜色与启动图底色 #FFF8F0 一致，不设置布局标志（避免 OriginOS 状态栏异常）
+        // 启动阶段：显式声明应用管理状态栏背景 + 清除半透明标志（模拟器必需），
+        // 底色与启动图 #FFF8F0 一致，深色图标
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
         window.statusBarColor = Color.parseColor("#FFF8F0")
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 
         PiggyData.init(this)
 
