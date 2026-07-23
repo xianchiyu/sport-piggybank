@@ -7,6 +7,12 @@ local.properties
 captures/
 .cxx/
 
+# APK / 签名文件（绝不进仓库）
+*.apk
+*.aab
+*.keystore
+*.jks
+
 # 系统文件
 .DS_Store
 Thumbs.db
@@ -14,6 +20,14 @@ Thumbs.db
 # 调试截图和脚本（开发过程产物，不进仓库）
 preview/
 
+# 本地文档（不进仓库）
+项目总结.md
+
 # 临时文件
 *.tmp
 *~
+*.hprof
+
+# 中间产物
+*.svg
+*.log

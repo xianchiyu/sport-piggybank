@@ -45,6 +45,7 @@ document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('acti
 document.querySelectorAll('.nav-item').forEach(function(t){ t.classList.remove('active'); });
 $('page-' + name).classList.add('active');
 $('tab-' + name).classList.add('active');
+if (name === 'home') loadHome();
 if (name === 'stats') loadStats();
 if (name === 'my') loadMy();
 }

@@ -224,7 +224,9 @@ object AutoPenalty {
             return
         }
 
-        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        val cal = java.util.Calendar.getInstance()
+        val today = String.format(java.util.Locale.US, "%04d-%02d-%02d",
+            cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH))
         val periodStart = PiggyData.penaltyPeriodStart
 
         if (periodStart.isEmpty()) {
@@ -233,7 +235,9 @@ object AutoPenalty {
         } else {
             val daysSince = try {
                 val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                ((fmt.parse(today)!!.time - fmt.parse(periodStart)!!.time) / (1000 * 60 * 60 * 24)).toInt()
+                val todayDate = fmt.parse(today)!!
+                val startDate = fmt.parse(periodStart)!!
+                ((todayDate.time - startDate.time) / (1000 * 60 * 60 * 24)).toInt()
             } catch (e: Exception) { 0 }
             if (daysSince >= 15) {
                 PiggyData.penaltyPeriodStart = today
@@ -264,7 +268,9 @@ object WeatherHelper {
     }
 
     fun isRainy(city: String): Boolean {
-        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        val cal = java.util.Calendar.getInstance()
+        val today = String.format(java.util.Locale.US, "%04d-%02d-%02d",
+            cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH))
 
         // 同一天只查一次
         if (cachedRainy != null && cacheDate == today) return cachedRainy!!

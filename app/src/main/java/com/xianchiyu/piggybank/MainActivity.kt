@@ -33,6 +33,16 @@ class MainActivity : AppCompatActivity() {
             allowFileAccess = true
         }
         webView.webViewClient = WebViewClient()
+        webView.webChromeClient = object : android.webkit.WebChromeClient() {
+            override fun onJsConfirm(view: android.webkit.WebView?, url: String?, message: String?, result: android.webkit.JsResult?): Boolean {
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                    .setMessage(message)
+                    .setPositiveButton("确定") { _, _ -> result?.confirm() }
+                    .setNegativeButton("取消") { _, _ -> result?.cancel() }
+                    .show()
+                return true
+            }
+        }
         webView.addJavascriptInterface(JsBridge(), "Android")
 
         webView.loadUrl("file:///android_asset/www/index.html")
@@ -380,17 +390,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         private fun todayStr(): String {
-            return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val cal = Calendar.getInstance()
+            return String.format(Locale.US, "%04d-%02d-%02d",
+                cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
         }
 
         private fun yesterdayStr(): String {
             val cal = Calendar.getInstance()
             cal.add(Calendar.DAY_OF_MONTH, -1)
-            return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.time)
+            return String.format(Locale.US, "%04d-%02d-%02d",
+                cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
         }
 
         private fun daysBetween(start: String, end: String): Int {
-            val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val d1 = fmt.parse(start) ?: return 0
             val d2 = fmt.parse(end) ?: return 0
             return ((d2.time - d1.time) / (1000 * 60 * 60 * 24)).toInt()

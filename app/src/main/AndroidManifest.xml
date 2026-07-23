@@ -8,10 +8,11 @@
 
     <application
         android:allowBackup="true"
-        android:label="运动存钱罐"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="运动储蓄罐"
         android:supportsRtl="true"
         android:theme="@style/Theme.PiggyBank">
-
         <activity
             android:name=".MainActivity"
             android:exported="true">
