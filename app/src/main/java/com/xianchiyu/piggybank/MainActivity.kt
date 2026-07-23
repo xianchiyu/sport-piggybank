@@ -27,12 +27,11 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 启动图阶段：透明状态栏，图片延伸到顶部
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        )
-        window.statusBarColor = Color.TRANSPARENT
+        // 启动阶段：奶油色不透明状态栏 + 深色图标（与启动图底色 #FFF8F0 一致，
+        // 避免透明状态栏压暗色图顶导致图标不可见/黑边）；不使用 LAYOUT_FULLSCREEN，
+        // 全程不切换全屏模式，避免进入页面时的重布局闪烁。
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        window.statusBarColor = Color.parseColor("#FFF8F0")
 
         PiggyData.init(this)
 
