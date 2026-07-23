@@ -22,9 +22,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         PiggyData.init(this)
-        ReminderScheduler.scheduleAll(this)
+
+        // ReminderScheduler 后台执行，不阻塞首屏
+        android.os.Handler(mainLooper).post {
+            ReminderScheduler.scheduleAll(this@MainActivity)
+        }
 
         webView = WebView(this)
+
+        // 设置背景色减少白屏感
+        webView.setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+        // 硬件加速，提升渲染速度
+        webView.setLayerType(android.webkit.WebView.LAYER_TYPE_HARDWARE, null)
+
         setContentView(webView)
 
         webView.settings.apply {
@@ -89,6 +99,9 @@ class MainActivity : AppCompatActivity() {
                 else -> return err("未知任务类型: $type")
             }
             if (lastDate == today) return err("今天已经打过此卡")
+
+            // 晚餐已用社交豁免则不可打卡
+            if (type == "dinner" && PiggyData.socialExemptDate == today) return err("今天已用社交豁免，晚餐免打卡")
 
             // 手动覆盖优先于 API 判断
             val isRainyToday = manualRainy || WeatherHelper.isRainy(PiggyData.city)
@@ -224,6 +237,8 @@ class MainActivity : AppCompatActivity() {
             }
             if (PiggyData.socialExemptUsed >= 3) return err("本月社交豁免次数已用完")
             if (PiggyData.socialExemptDate == today) return err("今天已经用过社交豁免了")
+            // 晚餐已打卡则不可用豁免
+            if (PiggyData.lastDinnerDate == today) return err("今天晚餐已经打卡，无需社交豁免")
             PiggyData.socialExemptUsed += 1
             PiggyData.socialExemptDate = today
             addTransaction("exempt", "social_exempt", 0f, "晚餐社交豁免(保留连续天数)")
