@@ -187,33 +187,43 @@ var r = parseResult(Android.getWeatherStatus());
 if (r.ok && r.data.rainy) {
 $('rainyHint').style.display='block';
 $('manualRainyWrap').style.display='none';
-selectedExType='indoor';
-document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=true;b.style.opacity=0.4;});
-document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=true;b.style.opacity=0.4;});
-$('exDistanceWrap').style.display='none';
+showIndoorMode();
 } else {
 $('rainyHint').style.display='none';
 $('manualRainyWrap').style.display='flex';
+showNormalMode();
+}
+} else {
+$('rainyHint').style.display='none';
+$('manualRainyWrap').style.display='none';
+showNormalMode();
+}
+}
+function showIndoorMode() {
+selectedExType='indoor';
+selectedExDur=0;
+document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=true;b.style.opacity=0.4;});
+document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=true;b.style.opacity=0.4;});
+$('exDistanceWrap').style.display='none';
+$('exDurationGroup').style.display='none';
+$('exIndoorGroup').style.display='block';
+}
+function showNormalMode() {
 selectExType('run');
+selectExDur(30);
 document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=false;b.style.opacity=1;});
 document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=false;b.style.opacity=1;});
 $('exDistanceWrap').style.display='block';
-}
-}
+$('exDurationGroup').style.display='flex';
+$('exIndoorGroup').style.display='none';
 }
 function closeExercise() { $('exerciseModal').classList.remove('show'); }
 function onManualRainy() {
 isManualRainy = $('manualRainy').checked;
 if (isManualRainy) {
-selectedExType='indoor';
-document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=true;b.style.opacity=0.4;});
-document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=true;b.style.opacity=0.4;});
-$('exDistanceWrap').style.display='none';
+showIndoorMode();
 } else {
-selectExType('run');
-document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=false;b.style.opacity=1;});
-document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=false;b.style.opacity=1;});
-$('exDistanceWrap').style.display='block';
+showNormalMode();
 }
 }
 function selectExType(type) {
@@ -232,7 +242,8 @@ var dist = parseFloat($('exDistance').value) || 0;
 if (window.Android) {
 var r = parseResult(Android.checkin('exercise', selectedExType, selectedExDur, dist, isManualRainy));
 if (!r.ok) { toast(r.error); return; }
-toast('+' + r.data.coins + '铜 (x' + r.data.multiplier + ')');
+var rainTag = r.data.isRainy ? ' (雨天室内)' : '';
+toast('+' + r.data.coins + '铜 (x' + r.data.multiplier + ')' + rainTag);
 var r2 = parseResult(Android.getBalance());
 if (r2.ok) renderPiggy(r2.data.gold, r2.data.silver, r2.data.copper);
 loadStreaks();
@@ -424,6 +435,17 @@ $('penCount').textContent = pr.data.count + '次';
 $('penNext').textContent = '¥' + pr.data.nextPenalty;
 $('penDays').textContent = pr.data.daysLeft + '天';
 }
+// 加载闹钟设置
+var ar = parseResult(Android.getAlarmSettings());
+if (ar.ok) {
+var fmtTime = function(mins) { return String(Math.floor(mins/60)).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0'); };
+$('alarmBreakfast').value = fmtTime(ar.data.breakfast.time);
+$('alarmBreakfastOn').checked = ar.data.breakfast.on;
+$('alarmDinner').value = fmtTime(ar.data.dinner.time);
+$('alarmDinnerOn').checked = ar.data.dinner.on;
+$('alarmExercise').value = fmtTime(ar.data.exercise.time);
+$('alarmExerciseOn').checked = ar.data.exercise.on;
+}
 } else {
 $('qIncomeCopper').textContent = '1230铜';
 $('qExpenseCopper').textContent = '420铜';
@@ -509,6 +531,16 @@ var city = $('cityInput').value.trim();
 if (!city) { toast('输入城市名'); return; }
 if (window.Android) Android.setCity(city);
 toast('城市已更新');
+}
+
+function saveAlarm(type) {
+if (!window.Android) { toast('mock 闹钟已保存'); return; }
+var timeInput = $('alarm' + type.charAt(0).toUpperCase() + type.slice(1));
+var onInput = $('alarm' + type.charAt(0).toUpperCase() + type.slice(1) + 'On');
+var parts = timeInput.value.split(':');
+var minutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+var r = parseResult(Android.setAlarm(type, minutes, onInput.checked));
+if (r.ok) toast('闹钟已更新'); else toast(r.error);
 }
 function doSocialExempt() {
 if (window.Android) {

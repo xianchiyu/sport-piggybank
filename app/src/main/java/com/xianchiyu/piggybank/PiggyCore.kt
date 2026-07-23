@@ -98,6 +98,33 @@ object PiggyData {
     var quarterExpense: Float
         get() = prefs?.getFloat("qExpense", 0f) ?: 0f
         set(v) { prefs?.edit()?.putFloat("qExpense", v)?.apply() }
+
+    // 闹钟时间（分钟数，0-1439）
+    var alarmBreakfast: Int
+        get() = prefs?.getInt("alarmBreakfast", 7 * 60 + 30) ?: (7 * 60 + 30)
+        set(v) { prefs?.edit()?.putInt("alarmBreakfast", v)?.apply() }
+
+    var alarmDinner: Int
+        get() = prefs?.getInt("alarmDinner", 19 * 60 + 30) ?: (19 * 60 + 30)
+        set(v) { prefs?.edit()?.putInt("alarmDinner", v)?.apply() }
+
+    var alarmExercise: Int
+        get() = prefs?.getInt("alarmExercise", 20 * 60) ?: (20 * 60)
+        set(v) { prefs?.edit()?.putInt("alarmExercise", v)?.apply() }
+
+    // 闹钟开关
+    var alarmBreakfastOn: Boolean
+        get() = prefs?.getBoolean("alarmBreakfastOn", true) ?: true
+        set(v) { prefs?.edit()?.putBoolean("alarmBreakfastOn", v)?.apply() }
+
+    var alarmDinnerOn: Boolean
+        get() = prefs?.getBoolean("alarmDinnerOn", true) ?: true
+        set(v) { prefs?.edit()?.putBoolean("alarmDinnerOn", v)?.apply() }
+
+    var alarmExerciseOn: Boolean
+        get() = prefs?.getBoolean("alarmExerciseOn", true) ?: true
+        set(v) { prefs?.edit()?.putBoolean("alarmExerciseOn", v)?.apply() }
+}
 }
 
 // ── 币值计算工具 ──────────────────────────────────────
@@ -170,7 +197,7 @@ object CoinUtils {
     }
 
     fun exerciseCoins(type: String, duration: Int, distance: Float, isRainy: Boolean): Int {
-        if (isRainy) return 3
+        if (isRainy || type == "indoor") return 3
         if (type == "run") {
             val timeCoins = when (duration) { 10 -> 3; 20 -> 6; 30 -> 10; else -> 0 }
             val distCoins = if (distance >= 3f) 5 else 0
@@ -341,9 +368,21 @@ class BootReceiver : BroadcastReceiver() {
 
 object ReminderScheduler {
     fun scheduleAll(context: Context) {
-        schedule(context, 7, 30, "breakfast")
-        schedule(context, 19, 30, "dinner")
-        schedule(context, 20, 0, "exercise")
+        if (PiggyData.alarmBreakfastOn) {
+            schedule(context, PiggyData.alarmBreakfast / 60, PiggyData.alarmBreakfast % 60, "breakfast")
+        } else {
+            cancel(context, "breakfast")
+        }
+        if (PiggyData.alarmDinnerOn) {
+            schedule(context, PiggyData.alarmDinner / 60, PiggyData.alarmDinner % 60, "dinner")
+        } else {
+            cancel(context, "dinner")
+        }
+        if (PiggyData.alarmExerciseOn) {
+            schedule(context, PiggyData.alarmExercise / 60, PiggyData.alarmExercise % 60, "exercise")
+        } else {
+            cancel(context, "exercise")
+        }
     }
 
     fun schedule(context: Context, hour: Int, minute: Int, type: String) {
@@ -371,5 +410,15 @@ object ReminderScheduler {
             AlarmManager.INTERVAL_DAY,
             pi
         )
+    }
+
+    fun cancel(context: Context, type: String) {
+        val intent = Intent(context, ReminderReceiver::class.java)
+        val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        else PendingIntent.FLAG_UPDATE_CURRENT
+        val pi = PendingIntent.getBroadcast(context, type.hashCode(), intent, pendingFlags)
+        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        am.cancel(pi)
     }
 }

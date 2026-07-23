@@ -23,7 +23,7 @@
 <button class="ex-opt active" data-type="run" onclick="selectExType('run')">跑步</button>
 <button class="ex-opt" data-type="walk" onclick="selectExType('walk')">走路</button>
 </div>
-<div class="ex-duration">
+<div class="ex-duration" id="exDurationGroup">
 <button class="ex-dur" data-dur="10" onclick="selectExDur(10)">10分钟</button>
 <button class="ex-dur" data-dur="20" onclick="selectExDur(20)">20分钟</button>
 <button class="ex-dur active" data-dur="30" onclick="selectExDur(30)">30分钟</button>
@@ -31,6 +31,9 @@
 <div class="ex-distance" id="exDistanceWrap">
 <label>跑步距离(km) ≥3额外+5铜</label>
 <input type="number" id="exDistance" placeholder="如 4" step="0.1" min="0">
+</div>
+<div class="ex-indoor" id="exIndoorGroup" style="display:none;">
+<div class="hint" style="padding:8px 0;">雨天室内运动 - 6000步 = 3铜</div>
 </div>
 <label class="manual-rainy" id="manualRainyWrap" style="display:none;">
 <input type="checkbox" id="manualRainy" onchange="onManualRainy()"> 今天实际下雨，走室内
@@ -189,9 +192,9 @@
 <input type="text" id="cityInput" class="input" placeholder="输入城市名，如 北京">
 <button class="btn-small" style="margin-top:8px;" onclick="doSetCity()">保存</button>
 </div>
-<div class="setting-row"><span>早餐 7:30</span><span class="hint">已开启</span></div>
-<div class="setting-row"><span>晚餐 19:30</span><span class="hint">已开启</span></div>
-<div class="setting-row"><span>运动 20:00</span><span class="hint">已开启</span></div>
+<div class="setting-row"><span>早餐</span><input type="time" id="alarmBreakfast" value="07:30" class="input-time" onchange="saveAlarm('breakfast')"><label class="switch"><input type="checkbox" id="alarmBreakfastOn" checked onchange="saveAlarm('breakfast')"><span class="slider"></span></label></div>
+<div class="setting-row"><span>晚餐</span><input type="time" id="alarmDinner" value="19:30" class="input-time" onchange="saveAlarm('dinner')"><label class="switch"><input type="checkbox" id="alarmDinnerOn" checked onchange="saveAlarm('dinner')"><span class="slider"></span></label></div>
+<div class="setting-row"><span>运动</span><input type="time" id="alarmExercise" value="20:00" class="input-time" onchange="saveAlarm('exercise')"><label class="switch"><input type="checkbox" id="alarmExerciseOn" checked onchange="saveAlarm('exercise')"><span class="slider"></span></label></div>
 <div class="setting-row"><span>下次罚金</span><span id="penNext" class="warn">¥10</span></div>
 <div class="setting-row"><span>违规次数</span><span id="penCount" class="hint">0次</span></div>
 <div class="setting-row"><span>剩余天数</span><span id="penDays" class="hint">15天</span></div>
