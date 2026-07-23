@@ -21,6 +21,10 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 恢复状态栏为白色（SplashActivity 设了透明）
+        window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        window.statusBarColor = android.graphics.Color.parseColor("#FFFFFF")
+
         webView = WebView(this)
         setContentView(webView)
 
