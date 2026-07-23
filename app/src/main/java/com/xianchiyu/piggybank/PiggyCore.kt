@@ -125,7 +125,6 @@ object PiggyData {
         get() = prefs?.getBoolean("alarmExerciseOn", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("alarmExerciseOn", v)?.apply() }
 }
-}
 
 // ── 币值计算工具 ──────────────────────────────────────
 object CoinUtils {
