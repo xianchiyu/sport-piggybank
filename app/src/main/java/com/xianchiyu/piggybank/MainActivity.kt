@@ -27,10 +27,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 启动阶段：奶油色不透明状态栏 + 深色图标（与启动图底色 #FFF8F0 一致，
-        // 避免透明状态栏压暗色图顶导致图标不可见/黑边）；不使用 LAYOUT_FULLSCREEN，
-        // 全程不切换全屏模式，避免进入页面时的重布局闪烁。
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        // 启动阶段：状态栏颜色与启动图底色 #FFF8F0 一致，不设置布局标志（避免 OriginOS 状态栏异常）
         window.statusBarColor = Color.parseColor("#FFF8F0")
 
         PiggyData.init(this)
@@ -89,17 +86,13 @@ class MainActivity : Activity() {
     }
 
     /**
-     * 恢复状态栏为正常白底浅色状态栏（深色图标）。
-     * 整体赋值 systemUiVisibility 会清除 LAYOUT_FULLSCREEN，退出全屏延伸模式，
-     * 避免状态栏区域与 WebView 顶部内容重叠。在 onPageFinished / onReceivedError /
-     * 2 秒超时兜底三处均调用，确保任意加载路径最终状态栏都健康。
+     * 恢复状态栏为正常白底 + 深色图标。
+     * 在 onPageFinished / onReceivedError / 2 秒超时兜底三处均调用，
+     * 确保任意加载路径最终状态栏都正常显示。
      */
     private fun restoreStatusBar() {
-        // 清除 LAYOUT_FULLSCREEN（退出全屏延伸）+ 保留 LAYOUT_STABLE（避免黑色空条）+ 浅色状态栏（白底深色图标）
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-        )
+        // 恢复正常白底状态栏 + 深色图标
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         window.statusBarColor = Color.WHITE
     }
 
