@@ -6,30 +6,22 @@ import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
-import android.os.Looper
 import android.view.View
-import android.view.ViewGroup
-import android.view.animation.LinearInterpolator
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.FrameLayout
-import android.widget.ProgressBar
-import android.widget.TextView
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
-    private var splashView: View? = null
-    private var pageLoaded = false
-    private var minTimeReached = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,47 +36,33 @@ class MainActivity : Activity() {
 
         PiggyData.init(this)
 
-        // FrameLayout：底层 WebView，上层启动图
-        val container = FrameLayout(this)
-
         webView = WebView(this)
-        container.addView(webView, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT
-        ))
-
-        splashView = layoutInflater.inflate(R.layout.activity_splash, null)
-        container.addView(splashView, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT
-        ))
-
-        setContentView(container)
-
-        val progressBar = splashView!!.findViewById<ProgressBar>(R.id.splash_progress)
-        val percentText = splashView!!.findViewById<TextView>(R.id.splash_percent)
+        // 起始透明，冷启动期间透出系统 windowBackground 启动图，加载完淡入覆盖
+        webView.alpha = 0f
+        setContentView(webView)
 
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             allowFileAccess = true
         }
-        webView.setBackgroundColor(Color.parseColor("#F5F5F5"))
+        // 透明背景：让 windowBackground（splash_window_bg 照片）在冷启动期间透出
+        webView.setBackgroundColor(Color.TRANSPARENT)
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
-                pageLoaded = true
-                tryHideSplash()
+                // 页面加载完成：恢复白色状态栏 + 深色图标，并淡入 WebView 覆盖启动图
+                window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                window.statusBarColor = Color.WHITE
+                webView.animate().alpha(1f).setDuration(150).start()
+            }
+
+            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                if (webView.alpha < 1f) webView.animate().alpha(1f).setDuration(150).start()
             }
         }
 
         webView.webChromeClient = object : WebChromeClient() {
-            override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                if (splashView != null) {
-                    progressBar.progress = newProgress
-                    percentText.text = "$newProgress%"
-                }
-            }
             override fun onJsConfirm(view: WebView?, url: String?, message: String?, result: android.webkit.JsResult?): Boolean {
                 AlertDialog.Builder(this@MainActivity)
                     .setMessage(message)
@@ -98,35 +76,15 @@ class MainActivity : Activity() {
 
         webView.loadUrl("file:///android_asset/www/index.html")
 
-        // 最小展示时间 800ms，防止启动图一闪而过
-        Handler(Looper.getMainLooper()).postDelayed({
-            minTimeReached = true
-            tryHideSplash()
-        }, 800)
-
         // ReminderScheduler 后台执行
         Handler(mainLooper).post {
             ReminderScheduler.scheduleAll(this)
         }
-    }
 
-    private fun tryHideSplash() {
-        if (!pageLoaded || !minTimeReached || splashView == null) return
-
-        // 恢复白色状态栏 + 深色图标
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-        window.statusBarColor = Color.parseColor("#FFFFFF")
-
-        val sv = splashView!!
-        splashView = null
-
-        sv.animate()
-            .alpha(0f)
-            .setDuration(300)
-            .setInterpolator(LinearInterpolator())
-            .withEndAction {
-                (sv.parent as? ViewGroup)?.removeView(sv)
-            }
+        // 兜底：若 2s 内 onPageFinished 未触发（极端加载失败），强制淡入，避免永久卡在启动图
+        Handler(mainLooper).postDelayed({
+            if (webView.alpha < 1f) webView.animate().alpha(1f).setDuration(150).start()
+        }, 2000)
     }
 
     override fun onBackPressed() {

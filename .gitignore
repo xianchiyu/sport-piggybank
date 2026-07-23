@@ -31,3 +31,4 @@ preview/
 # 中间产物
 *.svg
 *.log
+.agents/
