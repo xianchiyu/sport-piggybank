@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PiggyBank" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.PiggyBank" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:statusBarColor">#fff</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">#F5F5F5</item>
     </style>
 </resources>

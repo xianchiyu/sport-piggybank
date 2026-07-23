@@ -1,11 +1,12 @@
 package com.xianchiyu.piggybank
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.AlertDialog
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -13,7 +14,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     private lateinit var webView: WebView
 
@@ -28,24 +29,42 @@ class MainActivity : AppCompatActivity() {
             ReminderScheduler.scheduleAll(this@MainActivity)
         }
 
+        // 原生 loading 布局：先显示 loading，WebView 加载完后切换
+        val container = android.widget.FrameLayout(this)
+        val loadingView = android.widget.TextView(this).apply {
+            text = "储蓄罐加载中..."
+            gravity = android.view.Gravity.CENTER
+            textSize = 16f
+            setTextColor(android.graphics.Color.parseColor("#888888"))
+            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+        }
         webView = WebView(this)
-
-        // 设置背景色减少白屏感
-        webView.setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
-        // 硬件加速，提升渲染速度
-        webView.setLayerType(android.webkit.WebView.LAYER_TYPE_HARDWARE, null)
-
-        setContentView(webView)
+        webView.visibility = android.view.View.GONE
+        container.addView(webView, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+        container.addView(loadingView, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+        ))
+        setContentView(container)
 
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             allowFileAccess = true
         }
-        webView.webViewClient = WebViewClient()
+        webView.setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                loadingView.visibility = android.view.View.GONE
+                webView.visibility = android.view.View.VISIBLE
+            }
+        }
         webView.webChromeClient = object : android.webkit.WebChromeClient() {
             override fun onJsConfirm(view: android.webkit.WebView?, url: String?, message: String?, result: android.webkit.JsResult?): Boolean {
-                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                AlertDialog.Builder(this@MainActivity)
                     .setMessage(message)
                     .setPositiveButton("确定") { _, _ -> result?.confirm() }
                     .setNegativeButton("取消") { _, _ -> result?.cancel() }
