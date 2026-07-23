@@ -19,7 +19,7 @@ class SplashActivity : Activity() {
         val progressBar = findViewById<ProgressBar>(R.id.splash_progress)
         val percentText = findViewById<TextView>(R.id.splash_percent)
 
-        // 进度动画：模拟 WebView / 资源加载进度
+        // 进度条动画
         val animator = ValueAnimator.ofInt(0, 100)
         animator.duration = 1200
         animator.interpolator = LinearInterpolator()
@@ -30,12 +30,12 @@ class SplashActivity : Activity() {
         }
         animator.start()
 
-        // 动画结束后跳转
+        // 动画结束后跳转 MainActivity，由其内部 loading 继续覆盖
         Handler(Looper.getMainLooper()).postDelayed({
             PiggyData.init(this)
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            overridePendingTransition(0, 0)  // 无缝切换
             finish()
         }, 1400)
     }

@@ -6,7 +6,6 @@ import android.app.AlertDialog
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -22,33 +21,10 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        PiggyData.init(this)
-
-        // ReminderScheduler 后台执行，不阻塞首屏
-        android.os.Handler(mainLooper).post {
-            ReminderScheduler.scheduleAll(this@MainActivity)
-        }
-
-        // 原生 loading 布局：先显示 loading，WebView 加载完后切换
-        val container = android.widget.FrameLayout(this)
-        val loadingView = android.widget.TextView(this).apply {
-            text = "储蓄罐加载中..."
-            gravity = android.view.Gravity.CENTER
-            textSize = 16f
-            setTextColor(android.graphics.Color.parseColor("#888888"))
-            setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
-        }
         webView = WebView(this)
-        webView.visibility = android.view.View.GONE
-        container.addView(webView, android.widget.FrameLayout.LayoutParams(
-            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
-        ))
-        container.addView(loadingView, android.widget.FrameLayout.LayoutParams(
-            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
-        ))
-        setContentView(container)
+        setContentView(webView)
+
+        PiggyData.init(this)
 
         webView.settings.apply {
             javaScriptEnabled = true
@@ -56,12 +32,6 @@ class MainActivity : Activity() {
             allowFileAccess = true
         }
         webView.setBackgroundColor(android.graphics.Color.parseColor("#F5F5F5"))
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
-                loadingView.visibility = android.view.View.GONE
-                webView.visibility = android.view.View.VISIBLE
-            }
-        }
         webView.webChromeClient = object : android.webkit.WebChromeClient() {
             override fun onJsConfirm(view: android.webkit.WebView?, url: String?, message: String?, result: android.webkit.JsResult?): Boolean {
                 AlertDialog.Builder(this@MainActivity)
@@ -75,6 +45,11 @@ class MainActivity : Activity() {
         webView.addJavascriptInterface(JsBridge(), "Android")
 
         webView.loadUrl("file:///android_asset/www/index.html")
+
+        // ReminderScheduler 后台执行
+        android.os.Handler(mainLooper).post {
+            ReminderScheduler.scheduleAll(this@MainActivity)
+        }
     }
 
     override fun onBackPressed() {
