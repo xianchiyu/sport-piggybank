@@ -303,7 +303,11 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun getTransactions(): String {
-            return ok(JSONArray(PiggyData.transactions))
+            return try {
+                ok(JSONArray(PiggyData.transactions))
+            } catch (e: Exception) {
+                ok(JSONArray())
+            }
         }
 
         @JavascriptInterface

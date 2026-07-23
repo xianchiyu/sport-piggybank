@@ -139,19 +139,20 @@ $('btnDinner').classList.toggle('pending', !done.dinner);
 
 function loadTodayLog() {
 var r = parseResult(Android.getTransactions());
-if (!r.ok) return;
+if (!r || !r.ok || !r.data) { $('todayLog').innerHTML = '<div class="hint" style="padding:4px 0;">暂无记录</div>'; return; }
 var today = formatDate(new Date());
-var txns = (r.data || []).filter(function(t){ return t.date === today; });
+var txns = r.data.filter(function(t){ return t && t.date === today; });
 var html = '';
 if (txns.length === 0) {
 html = '<div class="hint" style="padding:4px 0;">今天还没有记录</div>';
 } else {
 txns.forEach(function(t){
+var note = (t.note || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 var icon = '<span style="color:#4caf50;font-weight:700;">✓</span>';
 if (t.subtype === 'penalty_cash') icon = '<span style="color:#e65100;">⚠</span>';
 else if (t.type === 'expense' || t.subtype === 'purchase') icon = '<span style="color:#f0a23a;">−</span>';
 else if (t.subtype === 'social_exempt') icon = '<span style="color:#1565c0;">🛡</span>';
-html += '<div class="record-item">' + icon + ' ' + t.note + '</div>';
+html += '<div class="record-item">' + icon + ' ' + note + '</div>';
 });
 }
 $('todayLog').innerHTML = html;
