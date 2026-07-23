@@ -4,5 +4,6 @@
         <item name="android:windowBackground">@drawable/splash_window_bg</item>
         <item name="android:statusBarColor">#FFFFFF</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowSplashScreenBehavior">none</item>
     </style>
 </resources>
