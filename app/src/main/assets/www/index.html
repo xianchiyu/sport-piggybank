@@ -100,11 +100,7 @@
 <div class="header">
 <div class="title">统计</div>
 </div>
-<div class="segment-control">
-<div class="seg-item active" data-range="7" onclick="switchRange(7)">7天</div>
-<div class="seg-item" data-range="30" onclick="switchRange(30)">30天</div>
-<div class="seg-item" data-range="all" onclick="switchRange('all')">全部</div>
-</div>
+
 
 <div class="section">
 <div class="section-title">打卡记录</div>
@@ -117,17 +113,14 @@
 <div class="coin-card gold">
 <img class="coin-img" src="img/coin_gold.png" alt="金币">
 <div class="coin-num" id="statGold">2</div>
-<div class="coin-unit">枚</div>
 </div>
 <div class="coin-card silver">
 <img class="coin-img" src="img/coin_silver.png" alt="银币">
 <div class="coin-num" id="statSilver">35</div>
-<div class="coin-unit">枚</div>
 </div>
 <div class="coin-card copper">
 <img class="coin-img" src="img/coin_copper.png" alt="铜币">
 <div class="coin-num" id="statCopper">68</div>
-<div class="coin-unit">枚</div>
 </div>
 </div>
 </div>
@@ -192,9 +185,9 @@
 <input type="text" id="cityInput" class="input" placeholder="输入城市名，如 北京">
 <button class="btn-small" style="margin-top:8px;" onclick="doSetCity()">保存</button>
 </div>
-<div class="setting-row"><span>早餐</span><input type="time" id="alarmBreakfast" value="07:30" class="input-time" onchange="saveAlarm('breakfast')"><label class="switch"><input type="checkbox" id="alarmBreakfastOn" checked onchange="saveAlarm('breakfast')"><span class="slider"></span></label></div>
-<div class="setting-row"><span>晚餐</span><input type="time" id="alarmDinner" value="19:30" class="input-time" onchange="saveAlarm('dinner')"><label class="switch"><input type="checkbox" id="alarmDinnerOn" checked onchange="saveAlarm('dinner')"><span class="slider"></span></label></div>
-<div class="setting-row"><span>运动</span><input type="time" id="alarmExercise" value="20:00" class="input-time" onchange="saveAlarm('exercise')"><label class="switch"><input type="checkbox" id="alarmExerciseOn" checked onchange="saveAlarm('exercise')"><span class="slider"></span></label></div>
+
+
+
 <div class="setting-row"><span>下次罚金</span><span id="penNext" class="warn">¥10</span></div>
 <div class="setting-row"><span>违规次数</span><span id="penCount" class="hint">0次</span></div>
 <div class="setting-row"><span>剩余天数</span><span id="penDays" class="hint">15天</span></div>

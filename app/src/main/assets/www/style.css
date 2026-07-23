@@ -147,28 +147,6 @@ box-shadow:0 2px 8px rgba(0,0,0,0.03);
 }
 .clipboard { width:60px; height:auto; margin-top:4px; flex-shrink:0; }
 
-.segment-control {
-display:flex;
-justify-content:center;
-gap:0;
-padding:8px 16px 12px;
-}
-.seg-item {
-padding:6px 20px;
-border:none;
-border-radius:20px;
-background:transparent;
-font-size:14px; font-weight:600;
-cursor:pointer;
-font-family:inherit;
-color:#8a95a0;
-transition:all 0.2s;
-}
-.seg-item.active {
-background:#4caf50;
-color:#fff;
-box-shadow:0 2px 8px rgba(76,175,80,0.3);
-}
 
 .checkin-grid {
 background:#fff;
@@ -179,8 +157,8 @@ overflow-x:auto;
 }
 .cg-header {
 display:grid;
-grid-template-columns:60px repeat(7,1fr);
-gap:4px;
+grid-template-columns:46px repeat(7,1fr);
+gap:2px;
 margin-bottom:6px;
 font-size:12px;
 color:#8a95a0;
@@ -189,30 +167,30 @@ text-align:center;
 .cg-header > div:first-child { text-align:left; padding-left:2px; }
 .cg-row {
 display:grid;
-grid-template-columns:60px repeat(7,1fr);
-gap:4px;
+grid-template-columns:46px repeat(7,1fr);
+gap:2px;
 margin-bottom:4px;
 align-items:center;
 }
 .cg-label {
 display:flex;
 align-items:center;
-gap:4px;
+gap:3px;
 font-weight:700;
-font-size:13px;
+font-size:11px;
 color:#24323b;
 }
-.cg-label img { width:18px; height:18px; }
-.cg-badge { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; margin-right:6px; }
-.cg-badge img { width:16px; height:16px; }
+.cg-label img { width:14px; height:14px; }
+.cg-badge { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; margin-right:4px; }
+.cg-badge img { width:13px; height:13px; }
 .cg-badge.green { background:#eef6ed; }
 .cg-badge.yellow { background:#fff6e8; }
 .cg-badge.purple { background:#f6effa; }
 .cg-cell {
 display:flex; align-items:center; justify-content:center;
-width:30px; height:30px; margin:0 auto;
+width:24px; height:24px; margin:0 auto;
 border-radius:50%;
-font-size:14px;
+font-size:12px;
 font-weight:600;
 }
 .cg-cell.ok { background:#d8f0e0; color:#4caf50; }
@@ -529,40 +507,3 @@ to { transform:translateY(0) scale(1); opacity:1; }
 .coin-num { font-size:22px; }
 }
 
-/* 时间选择器 */
-.input-time {
-border:none;
-background:transparent;
-font-size:14px;
-color:#24323b;
-width:auto;
-}
-
-/* 开关 */
-.switch {
-position:relative;
-display:inline-block;
-width:44px;
-height:24px;
-}
-.switch input { display:none; }
-.slider {
-position:absolute;
-cursor:pointer;
-top:0; left:0; right:0; bottom:0;
-background:#ccc;
-border-radius:24px;
-transition:0.3s;
-}
-.slider:before {
-content:"";
-position:absolute;
-height:18px;
-width:18px;
-left:3px; bottom:3px;
-background:#fff;
-border-radius:50%;
-transition:0.3s;
-}
-.switch input:checked + .slider { background:#4caf50; }
-.switch input:checked + .slider:before { transform:translateX(20px); }

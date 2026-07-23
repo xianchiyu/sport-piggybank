@@ -16,7 +16,6 @@ function pad2(n) { return String(n).padStart(2,'0'); }
 
 var selectedExType = 'run';
 var selectedExDur = 30;
-var currentRange = 7;
 var isManualRainy = false;
 
 function init() {
@@ -257,14 +256,6 @@ closeExercise();
 setTimeout(function(){ coinDropAnimation('copper'); }, 100);
 }
 
-function switchRange(r) {
-currentRange = r;
-document.querySelectorAll('.seg-item').forEach(function(b){b.classList.remove('active');});
-var target = document.querySelector('.seg-item[data-range="'+r+'"]');
-if (target) target.classList.add('active');
-loadStats();
-}
-
 function loadStats() {
 var txns;
 if (window.Android) {
@@ -280,14 +271,12 @@ if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
 renderPiggy(2, 35, 68);
 }
 renderCheckinGrid(txns);
-var days = (currentRange === 'all') ? 30 : parseInt(currentRange);
-$('trendTitle').textContent = currentRange === 'all' ? '最近30天趋势' : ('最近' + days + '天趋势');
-renderTrendChart(txns, days);
+$('trendTitle').textContent = '最近7天趋势';
+renderTrendChart(txns, 7);
 }
 
 function renderCheckinGrid(txns) {
-var days = (currentRange === 'all') ? 7 : parseInt(currentRange);
-days = Math.min(days, 7);
+var days = 7;
 var dates = [];
 for (var i = days - 1; i >= 0; i--) {
 var d = new Date();
@@ -435,17 +424,6 @@ $('penCount').textContent = pr.data.count + '次';
 $('penNext').textContent = '¥' + pr.data.nextPenalty;
 $('penDays').textContent = pr.data.daysLeft + '天';
 }
-// 加载闹钟设置
-var ar = parseResult(Android.getAlarmSettings());
-if (ar.ok) {
-var fmtTime = function(mins) { return String(Math.floor(mins/60)).padStart(2,'0') + ':' + String(mins%60).padStart(2,'0'); };
-$('alarmBreakfast').value = fmtTime(ar.data.breakfast.time);
-$('alarmBreakfastOn').checked = ar.data.breakfast.on;
-$('alarmDinner').value = fmtTime(ar.data.dinner.time);
-$('alarmDinnerOn').checked = ar.data.dinner.on;
-$('alarmExercise').value = fmtTime(ar.data.exercise.time);
-$('alarmExerciseOn').checked = ar.data.exercise.on;
-}
 } else {
 $('qIncomeCopper').textContent = '1230铜';
 $('qExpenseCopper').textContent = '420铜';
@@ -533,15 +511,6 @@ if (window.Android) Android.setCity(city);
 toast('城市已更新');
 }
 
-function saveAlarm(type) {
-if (!window.Android) { toast('mock 闹钟已保存'); return; }
-var timeInput = $('alarm' + type.charAt(0).toUpperCase() + type.slice(1));
-var onInput = $('alarm' + type.charAt(0).toUpperCase() + type.slice(1) + 'On');
-var parts = timeInput.value.split(':');
-var minutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-var r = parseResult(Android.setAlarm(type, minutes, onInput.checked));
-if (r.ok) toast('闹钟已更新'); else toast(r.error);
-}
 function doSocialExempt() {
 if (window.Android) {
 var r = parseResult(Android.useSocialExempt());
