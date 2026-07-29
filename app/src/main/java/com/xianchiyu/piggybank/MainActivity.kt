@@ -23,6 +23,7 @@ import java.util.Locale
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
+    private var lastActiveDate: String = ""
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +37,10 @@ class MainActivity : Activity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 
         PiggyData.init(this)
+
+        val cal0 = Calendar.getInstance()
+        lastActiveDate = String.format(Locale.US, "%04d-%02d-%02d",
+            cal0.get(Calendar.YEAR), cal0.get(Calendar.MONTH) + 1, cal0.get(Calendar.DAY_OF_MONTH))
 
         webView = WebView(this)
         // 起始透明，冷启动期间透出系统 windowBackground 启动图，加载完淡入覆盖
@@ -94,6 +99,18 @@ class MainActivity : Activity() {
         // 恢复正常白底状态栏 + 深色图标
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         window.statusBarColor = Color.WHITE
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 检测日期是否变化（后台过夜等场景），变了就刷新页面触发自动违规检测
+        val cal = Calendar.getInstance()
+        val now = String.format(Locale.US, "%04d-%02d-%02d",
+            cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+        if (now != lastActiveDate) {
+            lastActiveDate = now
+            webView.loadUrl("file:///android_asset/www/index.html")
+        }
     }
 
     override fun onBackPressed() {
