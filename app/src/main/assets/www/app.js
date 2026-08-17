@@ -470,19 +470,4 @@ loadMy();
 }
 }
 
-// ── 手动上报违规 ────────────────────────────────
-function openReportModal() { $('reportModal').classList.add('show'); }
-function closeReportModal() { $('reportModal').classList.remove('show'); }
-function doReport(type) {
-var labels = {exercise:'运动', breakfast:'早餐', dinner:'晚餐'};
-closeReportModal();
-if (window.Android) {
-var r = parseResult(Android.reportViolation(type, labels[type] + '未达标'));
-if (r.ok) {
-toast('已记录违规，罚金¥' + r.data.cashPenalty);
-loadMy();
-} else { toast(r.error); }
-}
-}
-
 init();

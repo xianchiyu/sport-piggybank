@@ -266,45 +266,6 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun reportViolation(type: String, description: String): String {
-            val today = todayStr()
-
-            // 校验任务类型，未知类型不罚钱不清连续天数
-            if (type != "exercise" && type != "breakfast" && type != "dinner") {
-                return err("未知任务类型: $type")
-            }
-
-            // 晚餐社交豁免：当天用了豁免，手动上报也跳过
-            if (type == "dinner" && PiggyData.socialExemptDate == today) {
-                return err("今天已用社交豁免，晚餐免罚")
-            }
-
-            val penStart = PiggyData.penaltyPeriodStart
-            if (penStart.isEmpty() || daysBetween(penStart, today) >= 15) {
-                PiggyData.penaltyPeriodStart = today
-                PiggyData.penaltyCount = 0
-            }
-            PiggyData.penaltyCount += 1
-            val cashPenalty = CoinUtils.cashPenalty(PiggyData.penaltyCount)
-            PiggyData.penaltyTotal += cashPenalty.toFloat()
-
-            when (type) {
-                "exercise" -> PiggyData.exerciseStreak = 0
-                "breakfast" -> PiggyData.breakfastStreak = 0
-                "dinner" -> PiggyData.dinnerStreak = 0
-            }
-
-            addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (¥$cashPenalty)", Triple(0, 0, 0))
-
-            PiggyData.saveDailyBalance()
-            return ok(JSONObject().apply {
-                put("cashPenalty", cashPenalty)
-                put("penaltyCount", PiggyData.penaltyCount)
-                put("streakCleared", type)
-            })
-        }
-
-        @JavascriptInterface
         fun useSocialExempt(): String {
             val today = todayStr()
             val month = today.substring(0, 7)
