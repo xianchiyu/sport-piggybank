@@ -83,17 +83,17 @@ object PiggyData {
         get() = prefs?.getString("txns", "[]") ?: "[]"
         set(v) { prefs?.edit()?.putString("txns", v)?.apply() }
 
-    var quarterIncome: Float
-        get() = prefs?.getFloat("qIncome", 0f) ?: 0f
-        set(v) { prefs?.edit()?.putFloat("qIncome", v)?.apply() }
+    var quarterIncome: Int
+        get() = prefs?.getInt("qIncome", 0) ?: 0
+        set(v) { prefs?.edit()?.putInt("qIncome", v)?.apply() }
 
-    var quarterExpense: Float
-        get() = prefs?.getFloat("qExpense", 0f) ?: 0f
-        set(v) { prefs?.edit()?.putFloat("qExpense", v)?.apply() }
+    var quarterExpense: Int
+        get() = prefs?.getInt("qExpense", 0) ?: 0
+        set(v) { prefs?.edit()?.putInt("qExpense", v)?.apply() }
 
-    var penaltyTotal: Float
-        get() = prefs?.getFloat("penTotal", 0f) ?: 0f
-        set(v) { prefs?.edit()?.putFloat("penTotal", v)?.apply() }
+    var penaltyTotal: Int
+        get() = prefs?.getInt("penTotal", 0) ?: 0
+        set(v) { prefs?.edit()?.putInt("penTotal", v)?.apply() }
 
     var dailyBalance: String
         get() = prefs?.getString("dailyBal", "{}") ?: "{}"
@@ -299,7 +299,7 @@ object AutoPenalty {
         }
         PiggyData.penaltyCount += 1
         val cashPenalty = CoinUtils.cashPenalty(PiggyData.penaltyCount)
-        PiggyData.penaltyTotal += cashPenalty.toFloat()
+        PiggyData.penaltyTotal += cashPenalty
 
         when (type) {
             "exercise" -> PiggyData.exerciseStreak = 0

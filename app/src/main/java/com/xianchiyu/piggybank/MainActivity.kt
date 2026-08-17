@@ -216,7 +216,7 @@ class MainActivity : Activity() {
             }
 
             val yuan = coinsEarned * 0.1f
-            PiggyData.quarterIncome += yuan
+            PiggyData.quarterIncome += coinsEarned
 
             addTransaction("income", type, yuan, "${typeLabel(type)} +${coinsEarned}铜(x${mult})", Triple(g - oldGold, s - oldSilver, c - oldCopper))
 
@@ -253,7 +253,7 @@ class MainActivity : Activity() {
             PiggyData.silver = s
             PiggyData.gold = g
 
-            PiggyData.quarterExpense += amount
+            PiggyData.quarterExpense += copperNeeded
             addTransaction("expense", "purchase", -amount, note, Triple(g - oldGold, s - oldSilver, c - oldCopper))
 
             PiggyData.saveDailyBalance()
@@ -324,11 +324,10 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun getQuarterSummary(): String {
             val balance = CoinUtils.totalYuan(PiggyData.copper, PiggyData.silver, PiggyData.gold)
-            val balanceCopper = (balance * 10).toInt()
+            val balanceCopper = PiggyData.copper + PiggyData.silver * 10 + PiggyData.gold * 100
             return ok(JSONObject().apply {
-                put("income", PiggyData.quarterIncome)
-                put("expense", PiggyData.quarterExpense)
-                put("balance", balance)
+                put("incomeCopper", PiggyData.quarterIncome)
+                put("expenseCopper", PiggyData.quarterExpense)
                 put("balanceCopper", balanceCopper)
                 put("penaltyTotal", PiggyData.penaltyTotal)
             })
@@ -343,9 +342,9 @@ class MainActivity : Activity() {
                 put("penaltyTotal", penalty)
                 put("date", todayStr())
             }
-            PiggyData.quarterIncome = 0f
-            PiggyData.quarterExpense = 0f
-            PiggyData.penaltyTotal = 0f
+            PiggyData.quarterIncome = 0
+            PiggyData.quarterExpense = 0
+            PiggyData.penaltyTotal = 0
             val withdrawCoin = Triple(-PiggyData.gold, -PiggyData.silver, -PiggyData.copper)
             PiggyData.copper = 0
             PiggyData.silver = 0

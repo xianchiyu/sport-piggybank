@@ -365,6 +365,8 @@ if (window.Android) {
 var r = parseResult(Android.getQuarterSummary());
 if (r.ok) {
 var d = r.data;
+$('qIncomeCopper').textContent = d.incomeCopper + '铜';
+$('qExpenseCopper').textContent = d.expenseCopper + '铜';
 $('qBalanceCopper').textContent = d.balanceCopper + '铜';
 $('qPenaltyTotal').textContent = '¥' + d.penaltyTotal;
 }
@@ -442,15 +444,19 @@ toast(r.error);
 }
 }
 function doQuarterWithdraw() {
-if (!confirm('确定季度提现？余额将清零。')) return;
 if (window.Android) {
+var q = parseResult(Android.getQuarterSummary());
+if (q.ok) {
+var yuan = (q.data.balanceCopper / 10).toFixed(1);
+if (!confirm('可导出金额：¥' + yuan + '\n确定季度提现？余额将清零。')) return;
 var r = parseResult(Android.quarterWithdraw());
 if (r.ok) {
-toast('提现完成');
+toast('提现完成 ¥' + yuan);
 var b = parseResult(Android.getBalance());
 if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
 loadMy();
 } else { toast('提现失败'); }
+}
 }
 }
 function doSetCity() {
