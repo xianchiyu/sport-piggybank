@@ -239,7 +239,7 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun consume(amount: Float, note: String): String {
-            val copperNeeded = (amount * 10).toInt()
+            val copperNeeded = Math.round(amount * 10)
             val oldCopper = PiggyData.copper
             val oldSilver = PiggyData.silver
             val oldGold = PiggyData.gold
@@ -323,7 +323,6 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun getQuarterSummary(): String {
-            val balance = CoinUtils.totalYuan(PiggyData.copper, PiggyData.silver, PiggyData.gold)
             val balanceCopper = PiggyData.copper + PiggyData.silver * 10 + PiggyData.gold * 100
             return ok(JSONObject().apply {
                 put("incomeCopper", PiggyData.quarterIncome)

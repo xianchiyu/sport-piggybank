@@ -131,7 +131,7 @@ object PiggyData {
 // ── 币值计算工具 ──────────────────────────────────────
 object CoinUtils {
     fun totalYuan(copper: Int, silver: Int, gold: Int): Float {
-        return gold * 10f + silver * 1f + copper * 0.1f
+        return (gold * 100 + silver * 10 + copper) / 10f
     }
 
     fun autoMerge(c: Int, s: Int, g: Int): Triple<Int, Int, Int> {
