@@ -22,11 +22,17 @@
 <div class="ex-type">
 <button class="ex-opt active" data-type="run" onclick="selectExType('run')">跑步</button>
 <button class="ex-opt" data-type="walk" onclick="selectExType('walk')">走路</button>
+<button class="ex-opt" data-type="rope" onclick="selectExType('rope')">跳绳</button>
 </div>
 <div class="ex-duration" id="exDurationGroup">
 <button class="ex-dur" data-dur="10" onclick="selectExDur(10)">10分钟</button>
 <button class="ex-dur" data-dur="20" onclick="selectExDur(20)">20分钟</button>
 <button class="ex-dur active" data-dur="30" onclick="selectExDur(30)">30分钟</button>
+</div>
+<div class="ex-rope" id="exRopeGroup" style="display:none;">
+<button class="ex-dur" data-dur="200" onclick="selectExDur(200)">200个</button>
+<button class="ex-dur" data-dur="500" onclick="selectExDur(500)">500个</button>
+<button class="ex-dur active" data-dur="800" onclick="selectExDur(800)">800个</button>
 </div>
 <div class="ex-distance" id="exDistanceWrap">
 <label>跑步距离(km) ≥3额外+5铜</label>
@@ -40,6 +46,15 @@
 </label>
 <button class="btn-primary" onclick="doExerciseCheckin()">确认打卡</button>
 <button class="btn-cancel" onclick="closeExercise()">取消</button>
+</div>
+</div>
+<div id="reportModal" class="modal">
+<div class="modal-content">
+<div class="modal-title">手动上报违规</div>
+<button class="btn-warn" style="width:100%;margin-bottom:8px;" onclick="doReport('exercise')">运动未达标</button>
+<button class="btn-warn" style="width:100%;margin-bottom:8px;" onclick="doReport('breakfast')">早餐未做</button>
+<button class="btn-warn" style="width:100%;margin-bottom:8px;" onclick="doReport('dinner')">晚餐未达标</button>
+<button class="btn-cancel" onclick="closeReportModal()">取消</button>
 </div>
 </div>
 
@@ -128,9 +143,9 @@
 <div class="section">
 <div class="section-title" id="trendTitle">最近7天趋势</div>
 <div class="chart-legend">
-<span class="lg"><img src="img/legend_gold.png" alt="">金币</span>
-<span class="lg"><img src="img/legend_silver.png" alt="">银币</span>
-<span class="lg"><img src="img/legend_copper.png" alt="">铜币</span>
+<span class="lg"><span class="dot-gold"></span>金币</span>
+<span class="lg"><span class="dot-silver"></span>银币</span>
+<span class="lg"><span class="dot-copper"></span>铜币</span>
 </div>
 <div class="chart-wrap">
 <svg id="trendChart" viewBox="0 0 340 220" preserveAspectRatio="xMidYMid meet"></svg>
@@ -146,9 +161,8 @@
 <div class="section">
 <div class="section-title">季度统计</div>
 <div class="quarter-stats">
-<div class="stat"><span class="stat-label">总收入</span><span class="stat-val" id="qIncomeCopper">0铜</span></div>
-<div class="stat"><span class="stat-label">总支出</span><span class="stat-val" id="qExpenseCopper">0铜</span></div>
-<div class="stat highlight"><span class="stat-label">余额</span><span class="stat-val" id="qBalanceCopper">0铜</span></div>
+<div class="stat highlight"><span class="stat-label">可提现余额</span><span class="stat-val" id="qBalanceCopper">0铜</span></div>
+<div class="stat"><span class="stat-label">罚金投入</span><span class="stat-val" id="qPenaltyTotal">¥0</span></div>
 </div>
 <div class="ledger-coins-row">
 <span class="coin-text gold">金 <span id="ledgerGold">2</span></span>
@@ -172,6 +186,7 @@
 <div class="section">
 <div class="section-title">季度提现</div>
 <button class="btn-primary" onclick="doQuarterWithdraw()">季度提现</button>
+<button class="btn-warn" style="width:100%;margin-top:10px;" onclick="openReportModal()">手动上报违规</button>
 </div>
 
 <div class="section">

@@ -91,6 +91,41 @@ object PiggyData {
         get() = prefs?.getFloat("qExpense", 0f) ?: 0f
         set(v) { prefs?.edit()?.putFloat("qExpense", v)?.apply() }
 
+    var penaltyTotal: Float
+        get() = prefs?.getFloat("penTotal", 0f) ?: 0f
+        set(v) { prefs?.edit()?.putFloat("penTotal", v)?.apply() }
+
+    var dailyBalance: String
+        get() = prefs?.getString("dailyBal", "{}") ?: "{}"
+        set(v) { prefs?.edit()?.putString("dailyBal", v)?.apply() }
+
+    /**
+     * 保存当天余额快照，自动只保留最近30天。
+     * 在每次余额变化（打卡/消费/违规/提现）及每天首次打开app时调用。
+     */
+    fun saveDailyBalance() {
+        val cal = java.util.Calendar.getInstance()
+        val today = String.format(java.util.Locale.US, "%04d-%02d-%02d",
+            cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH))
+        try {
+            val json = org.json.JSONObject(dailyBalance)
+            json.put(today, org.json.JSONObject().apply {
+                put("gold", gold)
+                put("silver", silver)
+                put("copper", copper)
+            })
+            // 只保留最近30天，按日期键排序后删除最早的
+            val keys = mutableListOf<String>()
+            val iter = json.keys()
+            while (iter.hasNext()) keys.add(iter.next())
+            keys.sort()
+            while (keys.size > 30) {
+                json.remove(keys.removeAt(0))
+            }
+            dailyBalance = json.toString()
+        } catch (e: Exception) { }
+    }
+
 }
 
 // ── 币值计算工具 ──────────────────────────────────────
@@ -141,9 +176,7 @@ object CoinUtils {
         if (gold >= goldNeed) {
             gold -= goldNeed
             silver = goldNeed * 10 - silverShort
-            val allCopper = copper + silver * 10
-            silver = allCopper / 10
-            copper = allCopper % 10
+            copper = silverNeed * 10 - need
             return Triple(copper, silver, gold)
         }
         return null
@@ -162,6 +195,7 @@ object CoinUtils {
         }
     }
 
+    // duration 语义按 type 区分：run/walk 为分钟（10/20/30），rope 为个数（200/500/800）
     fun exerciseCoins(type: String, duration: Int, distance: Float, isRainy: Boolean): Int {
         if (isRainy || type == "indoor") return 3
         if (type == "run") {
@@ -171,6 +205,9 @@ object CoinUtils {
         }
         if (type == "walk") {
             return when (duration) { 10 -> 1; 20 -> 3; 30 -> 5; else -> 0 }
+        }
+        if (type == "rope") {
+            return when (duration) { 200 -> 2; 500 -> 4; 800 -> 7; else -> 0 }
         }
         return 0
     }
@@ -188,57 +225,81 @@ object AutoPenalty {
     fun check(today: String, yesterday: String): List<Violation> {
         val violations = mutableListOf<Violation>()
 
-        if (PiggyData.autoCheckDate == today) return violations
+        val lastCheck = PiggyData.autoCheckDate
+        if (lastCheck == today) return violations
         PiggyData.autoCheckDate = today
 
         if (PiggyData.lastExerciseDate.isEmpty() &&
             PiggyData.lastBreakfastDate.isEmpty() &&
             PiggyData.lastDinnerDate.isEmpty()) return violations
 
-        checkOne("exercise", yesterday, "未运动", violations)
-        checkOne("breakfast", yesterday, "没做早饭", violations)
-        checkOne("dinner", yesterday, "晚餐不达标", violations)
+        // 从上次检测日的下一天开始，到昨天为止逐日检查（缺几天罚几天）
+        var startDay: String
+        if (lastCheck.isEmpty()) {
+            // 首次检测：从安装日（firstUseDate）的下一天开始
+            startDay = if (PiggyData.firstUseDate.isEmpty()) yesterday
+                       else addDays(PiggyData.firstUseDate, 1)
+        } else {
+            startDay = addDays(lastCheck, 1)
+        }
+        if (startDay > yesterday) return violations
 
+        var day = startDay
+        while (day <= yesterday) {
+            checkOne("exercise", day, "未运动", violations)
+            checkOne("breakfast", day, "没做早饭", violations)
+            checkOne("dinner", day, "晚餐不达标", violations)
+            day = addDays(day, 1)
+        }
         return violations
     }
 
-    private fun checkOne(type: String, yesterday: String, desc: String, out: MutableList<Violation>) {
+    private fun addDays(dateStr: String, n: Int): String {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val d = fmt.parse(dateStr) ?: return dateStr
+        val cal = java.util.Calendar.getInstance()
+        cal.time = d
+        cal.add(java.util.Calendar.DAY_OF_MONTH, n)
+        return String.format(java.util.Locale.US, "%04d-%02d-%02d",
+            cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH))
+    }
+
+    private fun daysBetween(start: String, end: String): Int {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val d1 = fmt.parse(start) ?: return 0
+        val d2 = fmt.parse(end) ?: return 0
+        return ((d2.time - d1.time) / (1000 * 60 * 60 * 24)).toInt()
+    }
+
+    private fun checkOne(type: String, checkDay: String, desc: String, out: MutableList<Violation>) {
         val lastDate = when (type) {
             "exercise" -> PiggyData.lastExerciseDate
             "breakfast" -> PiggyData.lastBreakfastDate
             "dinner" -> PiggyData.lastDinnerDate
             else -> return
         }
-        if (lastDate >= yesterday) return
+        if (lastDate >= checkDay) return
 
-        // 晚餐社交豁免：当天用了豁免，次日自动检测跳过
-        if (type == "dinner" && PiggyData.socialExemptDate == yesterday) {
+        // 晚餐社交豁免：当天用了豁免，检测跳过
+        if (type == "dinner" && PiggyData.socialExemptDate == checkDay) {
             out.add(Violation(type, desc, 0, exempted = true))
             return
         }
 
-        val cal = java.util.Calendar.getInstance()
-        val today = String.format(java.util.Locale.US, "%04d-%02d-%02d",
-            cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH))
         val periodStart = PiggyData.penaltyPeriodStart
-
         if (periodStart.isEmpty()) {
-            PiggyData.penaltyPeriodStart = today
+            PiggyData.penaltyPeriodStart = checkDay
             PiggyData.penaltyCount = 0
         } else {
-            val daysSince = try {
-                val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                val todayDate = fmt.parse(today)!!
-                val startDate = fmt.parse(periodStart)!!
-                ((todayDate.time - startDate.time) / (1000 * 60 * 60 * 24)).toInt()
-            } catch (e: Exception) { 0 }
+            val daysSince = daysBetween(periodStart, checkDay)
             if (daysSince >= 15) {
-                PiggyData.penaltyPeriodStart = today
+                PiggyData.penaltyPeriodStart = checkDay
                 PiggyData.penaltyCount = 0
             }
         }
         PiggyData.penaltyCount += 1
         val cashPenalty = CoinUtils.cashPenalty(PiggyData.penaltyCount)
+        PiggyData.penaltyTotal += cashPenalty.toFloat()
 
         when (type) {
             "exercise" -> PiggyData.exerciseStreak = 0
@@ -269,7 +330,8 @@ object WeatherHelper {
         if (cachedRainy != null && cacheDate == today) return cachedRainy!!
 
         cachedRainy = try {
-            val url = java.net.URL("https://uapis.cn/api/v1/misc/weather?city=$city")
+            val encodedCity = java.net.URLEncoder.encode(city, "UTF-8")
+            val url = java.net.URL("https://uapis.cn/api/v1/misc/weather?city=$encodedCity")
             val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 5000
@@ -278,16 +340,17 @@ object WeatherHelper {
             val code = conn.responseCode
             if (code != 200) {
                 conn.disconnect()
-                return false
-            }
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
-            conn.disconnect()
+                false
+            } else {
+                val body = conn.inputStream.bufferedReader().use { it.readText() }
+                conn.disconnect()
 
-            // 解析 JSON 中的 weather 字段
-            val json = org.json.JSONObject(body)
-            val weather = json.optString("weather", "")
-            // 天气文本含“雨”即为雨天
-            weather.contains("雨")
+                // 解析 JSON 中的 weather 字段
+                val json = org.json.JSONObject(body)
+                val weather = json.optString("weather", "")
+                // 天气文本含“雨”即为雨天
+                weather.contains("雨")
+            }
         } catch (e: Exception) {
             false
         }

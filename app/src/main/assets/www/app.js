@@ -26,7 +26,7 @@ $('expenseAmount').addEventListener('input', updateCopperEq);
 
 function updateCopperEq() {
 var v = parseFloat($('expenseAmount').value) || 0;
-$('copperEq').textContent = '= ' + Math.round(v * 10) + '铜';
+$('copperEq').textContent = '= ' + Math.floor(v * 10) + '铜';
 }
 
 function switchPage(name) {
@@ -47,7 +47,8 @@ var list = r.data.violations;
 if (!list || list.length === 0) return;
 var html = '';
 for (var i = 0; i < list.length; i++) {
-html += '<div class="violation-item">' + list[i] + '</div>';
+var item = String(list[i]).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+html += '<div class="violation-item">' + item + '</div>';
 }
 $('violationList').innerHTML = html;
 $('violationModal').classList.add('show');
@@ -140,7 +141,7 @@ function quickCheckin(type) {
 if (window.Android) {
 var r = parseResult(Android.checkin(type, '', 0, 0, false));
 if (!r.ok) { toast(r.error); return; }
-toast('+' + r.data.coins + '铜 (x' + r.data.multiplier + ')');
+toast('+' + r.data.coins + '铜');
 }
 var btn = type === 'breakfast' ? $('btnBreakfast') : $('btnDinner');
 btn.classList.add('done');
@@ -178,15 +179,13 @@ document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=true;b.style
 document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=true;b.style.opacity=0.4;});
 $('exDistanceWrap').style.display='none';
 $('exDurationGroup').style.display='none';
+$('exRopeGroup').style.display='none';
 $('exIndoorGroup').style.display='block';
 }
 function showNormalMode() {
 selectExType('run');
-selectExDur(30);
 document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=false;b.style.opacity=1;});
 document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=false;b.style.opacity=1;});
-$('exDistanceWrap').style.display='block';
-$('exDurationGroup').style.display='flex';
 $('exIndoorGroup').style.display='none';
 }
 function closeExercise() { $('exerciseModal').classList.remove('show'); }
@@ -202,7 +201,12 @@ function selectExType(type) {
 selectedExType = type;
 document.querySelectorAll('.ex-opt').forEach(function(b){b.classList.remove('active');});
 document.querySelector('.ex-opt[data-type="'+type+'"]').classList.add('active');
-$('exDistanceWrap').style.display = (type==='walk'||type==='indoor') ? 'none' : 'block';
+$('exDistanceWrap').style.display = (type==='walk'||type==='rope') ? 'none' : 'block';
+$('exDurationGroup').style.display = (type==='rope') ? 'none' : 'flex';
+$('exRopeGroup').style.display = (type==='rope') ? 'flex' : 'none';
+if (type === 'rope') selectExDur(800);
+else if (type === 'run') selectExDur(30);
+else if (type === 'walk') selectExDur(30);
 }
 function selectExDur(dur) {
 selectedExDur = dur;
@@ -215,7 +219,7 @@ if (window.Android) {
 var r = parseResult(Android.checkin('exercise', selectedExType, selectedExDur, dist, isManualRainy));
 if (!r.ok) { toast(r.error); return; }
 var rainTag = r.data.isRainy ? ' (雨天室内)' : '';
-toast('+' + r.data.coins + '铜 (x' + r.data.multiplier + ')' + rainTag);
+toast('+' + r.data.coins + '铜' + rainTag);
 var r2 = parseResult(Android.getBalance());
 if (r2.ok) renderPiggy(r2.data.gold, r2.data.silver, r2.data.copper);
 loadStreaks();
@@ -286,28 +290,25 @@ var d = new Date();
 d.setDate(d.getDate() - i);
 dates.push(formatDate(d));
 }
-var cumG = 0, cumS = 0, cumC = 0;
+// 从 SharedPreferences 读每日余额快照
+var snapshots = {};
+if (window.Android) {
+var r = parseResult(Android.getDailyBalances());
+if (r.ok && r.data) snapshots = r.data;
+}
+// 有快照用快照，没有则用前一个有效值填充（余额未变）
 var seriesG = [], seriesS = [], seriesC = [];
+var lastG = 0, lastS = 0, lastC = 0;
 for (var i = 0; i < dates.length; i++) {
-var day = dates[i];
-txns.forEach(function(t){
-if (t.date === day) {
-if (t.coinChange) {
-cumG += (t.coinChange.gold || 0);
-cumS += (t.coinChange.silver || 0);
-cumC += (t.coinChange.copper || 0);
-} else {
-if (t.type === 'income' && t.amount) {
-cumC += Math.round(t.amount * 10);
-} else if (t.type === 'expense' && t.amount) {
-cumC -= Math.round(t.amount * 10);
+var snap = snapshots[dates[i]];
+if (snap) {
+lastG = snap.gold || 0;
+lastS = snap.silver || 0;
+lastC = snap.copper || 0;
 }
-}
-}
-});
-seriesG.push(cumG);
-seriesS.push(cumS);
-seriesC.push(cumC);
+seriesG.push(lastG);
+seriesS.push(lastS);
+seriesC.push(lastC);
 }
 drawChart(seriesG, seriesS, seriesC, dates);
 }
@@ -322,11 +323,7 @@ var maxV = 1;
 for (var i = 0; i < sG.length; i++) if (sG[i] > maxV) maxV = sG[i];
 for (var i = 0; i < sS.length; i++) if (sS[i] > maxV) maxV = sS[i];
 for (var i = 0; i < sC.length; i++) if (sC[i] > maxV) maxV = sC[i];
-var niceMax;
-if (maxV <= 30) niceMax = 30;
-else if (maxV <= 60) niceMax = 60;
-else if (maxV <= 120) niceMax = 120;
-else niceMax = Math.ceil(maxV / 30) * 30;
+var niceMax = 20;
 var yTicks = [0, niceMax/4, niceMax/2, niceMax*3/4, niceMax];
 var html = '';
 for (var i = 0; i < yTicks.length; i++) {
@@ -368,9 +365,8 @@ if (window.Android) {
 var r = parseResult(Android.getQuarterSummary());
 if (r.ok) {
 var d = r.data;
-$('qIncomeCopper').textContent = d.incomeCopper + '铜';
-$('qExpenseCopper').textContent = d.expenseCopper + '铜';
 $('qBalanceCopper').textContent = d.balanceCopper + '铜';
+$('qPenaltyTotal').textContent = '¥' + d.penaltyTotal;
 }
 var b = parseResult(Android.getBalance());
 if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
@@ -419,7 +415,8 @@ var icon = '<span style="color:#4caf50;">●</span>';
 if (t.subtype === 'penalty_cash') icon = '<span style="color:#e65100;">●</span>';
 else if (t.type === 'expense' || t.subtype === 'purchase') icon = '<span style="color:#f0a23a;">●</span>';
 else if (t.subtype === 'social_exempt') icon = '<span style="color:#1565c0;">●</span>';
-html += '<div class="log-item">' + icon + ' ' + t.date.slice(5) + ' ' + t.note + '</div>';
+var note = (t.note || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+html += '<div class="log-item">' + icon + ' ' + t.date.slice(5) + ' ' + note + '</div>';
 });
 }
 $('txnList').innerHTML = html;
@@ -468,6 +465,21 @@ if (window.Android) {
 var r = parseResult(Android.useSocialExempt());
 if (r.ok) {
 toast('晚餐社交豁免已生效，今晚免罚保留连续');
+loadMy();
+} else { toast(r.error); }
+}
+}
+
+// ── 手动上报违规 ────────────────────────────────
+function openReportModal() { $('reportModal').classList.add('show'); }
+function closeReportModal() { $('reportModal').classList.remove('show'); }
+function doReport(type) {
+var labels = {exercise:'运动', breakfast:'早餐', dinner:'晚餐'};
+closeReportModal();
+if (window.Android) {
+var r = parseResult(Android.reportViolation(type, labels[type] + '未达标'));
+if (r.ok) {
+toast('已记录违规，罚金¥' + r.data.cashPenalty);
 loadMy();
 } else { toast(r.error); }
 }

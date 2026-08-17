@@ -206,6 +206,9 @@ display:flex; align-items:center; gap:4px;
 font-size:12px; color:#666;
 }
 .lg img { width:14px; height:14px; border-radius:50%; object-fit:cover; box-shadow:0 1px 2px rgba(0,0,0,.12); }
+.lg .dot-gold { width:10px; height:10px; border-radius:50%; background:#f2bd3f; box-shadow:0 1px 2px rgba(0,0,0,.12); }
+.lg .dot-silver { width:10px; height:10px; border-radius:50%; background:#7da3c2; box-shadow:0 1px 2px rgba(0,0,0,.12); }
+.lg .dot-copper { width:10px; height:10px; border-radius:50%; background:#f08a4b; box-shadow:0 1px 2px rgba(0,0,0,.12); }
 .chart-wrap {
 background:#fff;
 border-radius:16px;

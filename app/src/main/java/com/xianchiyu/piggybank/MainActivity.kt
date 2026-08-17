@@ -50,12 +50,16 @@ class MainActivity : Activity() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            allowFileAccess = true
         }
         // 透明背景：让 windowBackground（splash_window_bg 照片）在冷启动期间透出
         webView.setBackgroundColor(Color.TRANSPARENT)
 
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val url = request?.url?.toString() ?: return false
+                // 导航白名单：只允许加载本地 asset 页面，其余 URL 一律拦截
+                return !url.startsWith("file:///android_asset/")
+            }
             override fun onPageFinished(view: WebView?, url: String?) {
                 // 页面加载完成：恢复白色状态栏 + 深色图标，并淡入 WebView 覆盖启动图
                 restoreStatusBar()
@@ -158,8 +162,12 @@ class MainActivity : Activity() {
             // 晚餐已用社交豁免则不可打卡
             if (type == "dinner" && PiggyData.socialExemptDate == today) return err("今天已用社交豁免，晚餐免打卡")
 
-            // 手动覆盖优先于 API 判断
-            val isRainyToday = manualRainy || WeatherHelper.isRainy(PiggyData.city)
+            // 只有运动打卡才查天气，早餐晚餐不触发天气请求
+            val isRainyToday = if (type == "exercise") {
+                manualRainy || WeatherHelper.isRainy(PiggyData.city)
+            } else {
+                false
+            }
 
             val yesterday = yesterdayStr()
             val prevStreak = when (type) {
@@ -212,6 +220,7 @@ class MainActivity : Activity() {
 
             addTransaction("income", type, yuan, "${typeLabel(type)} +${coinsEarned}铜(x${mult})", Triple(g - oldGold, s - oldSilver, c - oldCopper))
 
+            PiggyData.saveDailyBalance()
             return ok(JSONObject().apply {
                 put("coins", coinsEarned)
                 put("multiplier", mult)
@@ -247,6 +256,7 @@ class MainActivity : Activity() {
             PiggyData.quarterExpense += amount
             addTransaction("expense", "purchase", -amount, note, Triple(g - oldGold, s - oldSilver, c - oldCopper))
 
+            PiggyData.saveDailyBalance()
             return ok(JSONObject().apply {
                 put("copper", c)
                 put("silver", s)
@@ -258,6 +268,11 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun reportViolation(type: String, description: String): String {
             val today = todayStr()
+
+            // 校验任务类型，未知类型不罚钱不清连续天数
+            if (type != "exercise" && type != "breakfast" && type != "dinner") {
+                return err("未知任务类型: $type")
+            }
 
             // 晚餐社交豁免：当天用了豁免，手动上报也跳过
             if (type == "dinner" && PiggyData.socialExemptDate == today) {
@@ -271,6 +286,7 @@ class MainActivity : Activity() {
             }
             PiggyData.penaltyCount += 1
             val cashPenalty = CoinUtils.cashPenalty(PiggyData.penaltyCount)
+            PiggyData.penaltyTotal += cashPenalty.toFloat()
 
             when (type) {
                 "exercise" -> PiggyData.exerciseStreak = 0
@@ -280,6 +296,7 @@ class MainActivity : Activity() {
 
             addTransaction("penalty", "penalty_cash", -cashPenalty.toFloat(), "违规: $description (¥$cashPenalty)", Triple(0, 0, 0))
 
+            PiggyData.saveDailyBalance()
             return ok(JSONObject().apply {
                 put("cashPenalty", cashPenalty)
                 put("penaltyCount", PiggyData.penaltyCount)
@@ -345,34 +362,35 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun getQuarterSummary(): String {
-            val incomeCopper = (PiggyData.quarterIncome * 10).toInt()
-            val expenseCopper = (PiggyData.quarterExpense * 10).toInt()
+            val balance = CoinUtils.totalYuan(PiggyData.copper, PiggyData.silver, PiggyData.gold)
+            val balanceCopper = (balance * 10).toInt()
             return ok(JSONObject().apply {
                 put("income", PiggyData.quarterIncome)
                 put("expense", PiggyData.quarterExpense)
-                put("balance", PiggyData.quarterIncome - PiggyData.quarterExpense)
-                put("incomeCopper", incomeCopper)
-                put("expenseCopper", expenseCopper)
-                put("balanceCopper", incomeCopper - expenseCopper)
+                put("balance", balance)
+                put("balanceCopper", balanceCopper)
+                put("penaltyTotal", PiggyData.penaltyTotal)
             })
         }
 
         @JavascriptInterface
         fun quarterWithdraw(): String {
-            val balance = PiggyData.quarterIncome - PiggyData.quarterExpense
+            val balance = CoinUtils.totalYuan(PiggyData.copper, PiggyData.silver, PiggyData.gold)
+            val penalty = PiggyData.penaltyTotal
             val report = JSONObject().apply {
-                put("income", PiggyData.quarterIncome)
-                put("expense", PiggyData.quarterExpense)
                 put("balance", balance)
+                put("penaltyTotal", penalty)
                 put("date", todayStr())
             }
             PiggyData.quarterIncome = 0f
             PiggyData.quarterExpense = 0f
+            PiggyData.penaltyTotal = 0f
             val withdrawCoin = Triple(-PiggyData.gold, -PiggyData.silver, -PiggyData.copper)
             PiggyData.copper = 0
             PiggyData.silver = 0
             PiggyData.gold = 0
-            addTransaction("withdraw", "quarter_withdraw", balance, "季度提现: ¥$balance", withdrawCoin)
+            addTransaction("withdraw", "quarter_withdraw", balance, "季度提现: ¥$balance (罚金¥$penalty)", withdrawCoin)
+            PiggyData.saveDailyBalance()
             return ok(report)
         }
 
@@ -399,12 +417,14 @@ class MainActivity : Activity() {
             if (firstUse.isEmpty()) {
                 PiggyData.firstUseDate = today
                 PiggyData.autoCheckDate = today
+                PiggyData.saveDailyBalance()
                 return ok(JSONObject().put("violations", JSONArray()))
             }
 
             // 安装当天不检测（给用户一个缓冲日）
             if (today == firstUse) {
                 PiggyData.autoCheckDate = today
+                PiggyData.saveDailyBalance()
                 return ok(JSONObject().put("violations", JSONArray()))
             }
 
@@ -423,6 +443,7 @@ class MainActivity : Activity() {
                         "自动违规: ${v.desc} (¥${v.cashPenalty})", Triple(0, 0, 0))
                 }
             }
+            PiggyData.saveDailyBalance()
             return ok(JSONObject().put("violations", arr))
         }
 
@@ -443,6 +464,15 @@ class MainActivity : Activity() {
         fun getWeatherStatus(): String {
             val rainy = WeatherHelper.isRainy(PiggyData.city)
             return ok(JSONObject().put("rainy", rainy as Any))
+        }
+
+        @JavascriptInterface
+        fun getDailyBalances(): String {
+            return try {
+                ok(JSONObject(PiggyData.dailyBalance))
+            } catch (e: Exception) {
+                ok(JSONObject())
+            }
         }
 
         private fun addTransaction(type: String, subtype: String, amount: Float, note: String, coinChange: Triple<Int, Int, Int>? = null) {
