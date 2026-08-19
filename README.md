@@ -10,7 +10,6 @@
 | 运动（跑步/走路/跳绳） | 1~15铜 | 跑步>走路，距离≥3km额外+5铜；跳绳200个=2铜/500个=4铜/800个=7铜 |
 | 做早饭 | 3铜 | 自己做且相对清淡 |
 | 简单吃晚饭 | 3铜 | 非正餐/轻食/无负担 |
-| 雨天室内运动 | 3铜 | 自动检测雨天或手动切换，固定6000步 |
 
 ### 连续加成
 连续天数 → 倍率：≥14天(×1.8) ／ 7-13天(×1.5) ／ 3-6天(×1.2) ／ ≤2天(×1.0)
@@ -34,6 +33,7 @@
 ## 技术栈
 - Kotlin WebView壳（~3MB APK）
 - 纯 HTML/CSS/JS 前端（无框架）
+- 纯离线，无网络请求
 - SharedPreferences 持久化（MVP阶段，后续可升级 SQLite）
 - GitHub Actions CI 自动编译
 
@@ -59,7 +59,7 @@ sport-piggybank/
 │       ├── AndroidManifest.xml
 │       ├── java/com/xianchiyu/piggybank/
 │       │   ├── MainActivity.kt    # WebView壳 + JS桥接
-│       │   └── PiggyCore.kt       # 数据模型 + 币值计算 + 自动违规检测 + 天气查询
+│       │   └── PiggyCore.kt       # 数据模型 + 币值计算 + 自动违规检测
 │       ├── assets/www/
 │       │   ├── index.html         # SPA前端
 │       │   ├── style.css

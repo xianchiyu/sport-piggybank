@@ -162,12 +162,8 @@ class MainActivity : Activity() {
             // 晚餐已用社交豁免则不可打卡
             if (type == "dinner" && PiggyData.socialExemptDate == today) return err("今天已用社交豁免，晚餐免打卡")
 
-            // 只有运动打卡才查天气，早餐晚餐不触发天气请求
-            val isRainyToday = if (type == "exercise") {
-                manualRainy || WeatherHelper.isRainy(PiggyData.city)
-            } else {
-                false
-            }
+            // 室内运动：手动勾选时固定3铜
+            val isRainyToday = manualRainy
 
             val yesterday = yesterdayStr()
             val prevStreak = when (type) {
@@ -403,15 +399,7 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun setCity(city: String): String {
             PiggyData.city = city
-            // 城市变了，清空天气缓存
-            WeatherHelper.clearCache()
             return ok(JSONObject().put("city", city))
-        }
-
-        @JavascriptInterface
-        fun getWeatherStatus(): String {
-            val rainy = WeatherHelper.isRainy(PiggyData.city)
-            return ok(JSONObject().put("rainy", rainy as Any))
         }
 
         @JavascriptInterface

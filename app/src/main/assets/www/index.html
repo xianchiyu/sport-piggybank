@@ -17,7 +17,6 @@
 </div>
 <div id="exerciseModal" class="modal">
 <div class="modal-content">
-<div id="rainyHint" class="rainy-hint" style="display:none;">🌧️ 今日有雨，已转为室内运动</div>
 <div class="modal-title">运动打卡</div>
 <div class="ex-type">
 <button class="ex-opt active" data-type="run" onclick="selectExType('run')">跑步</button>
@@ -38,11 +37,8 @@
 <label>跑步距离(km) ≥3额外+5铜</label>
 <input type="number" id="exDistance" placeholder="如 4" step="0.1" min="0">
 </div>
-<div class="ex-indoor" id="exIndoorGroup" style="display:none;">
-<div class="hint" style="padding:8px 0;">雨天室内运动 - 6000步 = 3铜</div>
-</div>
-<label class="manual-rainy" id="manualRainyWrap" style="display:none;">
-<input type="checkbox" id="manualRainy" onchange="onManualRainy()"> 今天实际下雨，走室内
+<label class="manual-rainy" id="manualRainyWrap">
+<input type="checkbox" id="manualRainy" onchange="onManualRainy()"> 室内运动 6000步 = 3铜
 </label>
 <button class="btn-primary" onclick="doExerciseCheckin()">确认打卡</button>
 <button class="btn-cancel" onclick="closeExercise()">取消</button>

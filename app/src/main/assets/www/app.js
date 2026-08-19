@@ -26,7 +26,7 @@ $('expenseAmount').addEventListener('input', updateCopperEq);
 
 function updateCopperEq() {
 var v = parseFloat($('expenseAmount').value) || 0;
-$('copperEq').textContent = '= ' + Math.floor(v * 10) + '铜';
+$('copperEq').textContent = '= ' + Math.round(v * 10) + '铜';
 }
 
 function switchPage(name) {
@@ -159,18 +159,7 @@ function openExercise() {
 $('exerciseModal').classList.add('show');
 isManualRainy = false;
 $('manualRainy').checked = false;
-if (window.Android) {
-var r = parseResult(Android.getWeatherStatus());
-if (r.ok && r.data.rainy) {
-$('rainyHint').style.display='block';
-$('manualRainyWrap').style.display='none';
-showIndoorMode();
-} else {
-$('rainyHint').style.display='none';
-$('manualRainyWrap').style.display='flex';
 showNormalMode();
-}
-}
 }
 function showIndoorMode() {
 selectedExType='indoor';
@@ -180,13 +169,11 @@ document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=true;b.style
 $('exDistanceWrap').style.display='none';
 $('exDurationGroup').style.display='none';
 $('exRopeGroup').style.display='none';
-$('exIndoorGroup').style.display='block';
 }
 function showNormalMode() {
 selectExType('run');
 document.querySelectorAll('.ex-opt').forEach(function(b){b.disabled=false;b.style.opacity=1;});
 document.querySelectorAll('.ex-dur').forEach(function(b){b.disabled=false;b.style.opacity=1;});
-$('exIndoorGroup').style.display='none';
 }
 function closeExercise() { $('exerciseModal').classList.remove('show'); }
 function onManualRainy() {
@@ -218,8 +205,7 @@ var dist = parseFloat($('exDistance').value) || 0;
 if (window.Android) {
 var r = parseResult(Android.checkin('exercise', selectedExType, selectedExDur, dist, isManualRainy));
 if (!r.ok) { toast(r.error); return; }
-var rainTag = r.data.isRainy ? ' (雨天室内)' : '';
-toast('+' + r.data.coins + '铜' + rainTag);
+toast('+' + r.data.coins + '铜');
 var r2 = parseResult(Android.getBalance());
 if (r2.ok) renderPiggy(r2.data.gold, r2.data.silver, r2.data.copper);
 loadStreaks();
