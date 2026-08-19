@@ -371,20 +371,9 @@ class MainActivity : Activity() {
                 return ok(JSONObject().put("violations", JSONArray()))
             }
 
-            // 首次使用：记录安装日，不触发任何违规
-            val firstUse = PiggyData.firstUseDate
-            if (firstUse.isEmpty()) {
+            // 首次使用：记录安装日
+            if (PiggyData.firstUseDate.isEmpty()) {
                 PiggyData.firstUseDate = today
-                PiggyData.autoCheckDate = today
-                PiggyData.saveDailyBalance()
-                return ok(JSONObject().put("violations", JSONArray()))
-            }
-
-            // 安装当天不检测（给用户一个缓冲日）
-            if (today == firstUse) {
-                PiggyData.autoCheckDate = today
-                PiggyData.saveDailyBalance()
-                return ok(JSONObject().put("violations", JSONArray()))
             }
 
             val yesterday = yesterdayStr()

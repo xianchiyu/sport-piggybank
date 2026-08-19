@@ -233,14 +233,15 @@ object AutoPenalty {
             PiggyData.lastBreakfastDate.isEmpty() &&
             PiggyData.lastDinnerDate.isEmpty()) return violations
 
-        // 从上次检测日的下一天开始，到昨天为止逐日检查（缺几天罚几天）
+        // 从上次检测日开始检查（lastCheck 那天检测的是到 lastCheck-1 为止，
+        // lastCheck 本身的违规要等到次日才检测）
         var startDay: String
         if (lastCheck.isEmpty()) {
-            // 首次检测：从安装日（firstUseDate）的下一天开始
+            // 首次检测：从安装日的下一天开始（安装当天不检测）
             startDay = if (PiggyData.firstUseDate.isEmpty()) yesterday
                        else addDays(PiggyData.firstUseDate, 1)
         } else {
-            startDay = addDays(lastCheck, 1)
+            startDay = lastCheck
         }
         if (startDay > yesterday) return violations
 
