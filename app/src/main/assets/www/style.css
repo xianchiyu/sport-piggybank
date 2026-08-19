@@ -310,16 +310,6 @@ margin-top:8px;
 cursor:pointer;
 font-family:inherit;
 }
-.btn-small {
-padding:8px 16px;
-background:#f0f0f0;
-border:none;
-border-radius:10px;
-font-size:13px;
-cursor:pointer;
-font-family:inherit;
-color:#24323b;
-}
 .btn-warn {
 padding:10px 12px;
 background:#fff3e0;
@@ -354,15 +344,6 @@ font-size:18px;
 font-weight:700;
 text-align:center;
 margin-bottom:16px;
-}
-.rainy-hint {
-background:#e3f2fd;
-border-radius:12px;
-padding:10px;
-text-align:center;
-font-size:13px;
-color:#1565c0;
-margin-bottom:12px;
 }
 .ex-type {
 display:flex;

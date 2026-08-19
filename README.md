@@ -7,7 +7,7 @@
 ### 任务与奖励
 | 任务 | 基础奖励 | 说明 |
 |---|---|---|
-| 运动（跑步/走路/跳绳） | 1~15铜 | 跑步>走路，距离≥3km额外+5铜；跳绳200个=2铜/500个=4铜/800个=7铜 |
+| 运动（跑步/走路/跳绳） | 1~15铜 | 跑步>走路；**跑步**距离≥3km额外+5铜（走路无距离奖励）；跳绳200个=2铜/500个=4铜/800个=7铜 |
 | 做早饭 | 3铜 | 自己做且相对清淡 |
 | 简单吃晚饭 | 3铜 | 非正餐/轻食/无负担 |
 
@@ -38,23 +38,32 @@
 - GitHub Actions CI 自动编译
 
 ## 构建
-```bash
-# 本地构建
-./gradlew assembleDebug
+本仓库**本地零工具链**（不装 Android Studio / JDK / SDK），编译通过 GitHub Actions 自动完成：
 
-# 或：push 到 GitHub，Actions 自动编译
-# 下载 apk：Actions → Build APK → Artifacts
+```bash
+# 1. 把代码 push 到 GitHub
+git add . && git commit -m "..." && git push
+
+# 2. 在仓库 Actions → Build APK 页面等待编译完成，下载 Artifacts（app-debug.apk）
 ```
+
+> 如需在本地编译：先执行 `gradle wrapper`（生成 gradle-wrapper.jar），再 `./gradlew assembleDebug`。
+> 注意：仓库未提交 `gradle-wrapper.jar`，由 CI 在构建时现场生成，不影响云端编译。
 
 ## 已知限制
 - 卸载重装不保留历史数据（SharedPreferences 随卸载清除），更新 APK 请卸载重装后重新开始记录
 - 季度统计中收入/支出/罚金均为独立统计，提现金额只看币值余额，不含罚金
+
+## 仓库说明
+- 仓库仅含可编译源码；开发辅助文档（项目总结.md、校核报告*.md）与 preview/ 已由 .gitignore 忽略，不进 GitHub。
+- 未提交 gradle-wrapper.jar（CI 构建时现场生成），不影响云端编译。
 
 ## 目录结构
 ```
 sport-piggybank/
 ├── app/
 │   ├── build.gradle
+│   ├── proguard-rules.pro
 │   └── src/main/
 │       ├── AndroidManifest.xml
 │       ├── java/com/xianchiyu/piggybank/
@@ -64,9 +73,15 @@ sport-piggybank/
 │       │   ├── index.html         # SPA前端
 │       │   ├── style.css
 │       │   └── app.js
-│       └── res/values/themes.xml
+│       └── res/
+│           ├── drawable/          # 启动页背景 splash_bg.jpg + splash_window_bg.xml
+│           ├── mipmap-*/           # 各密度 ic_launcher.png 图标
+│           └── values/            # colors.xml + themes.xml（含启动页 windowBackground）
 ├── build.gradle
 ├── settings.gradle
 ├── gradle.properties
-└── .github/workflows/build.yml    # CI编译
+├── gradle/wrapper/gradle-wrapper.properties   # CI 构建必需
+├── .github/workflows/build.yml                # CI 编译脚本
+└── .gitignore
 ```
+> 注：`app/` 下另有一个 `settings.gradle` 冗余副本（Gradle 仅读取根目录那份），不参与构建。

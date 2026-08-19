@@ -139,15 +139,6 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun getStreaks(): String {
-            return ok(JSONObject().apply {
-                put("exercise", PiggyData.exerciseStreak)
-                put("breakfast", PiggyData.breakfastStreak)
-                put("dinner", PiggyData.dinnerStreak)
-            })
-        }
-
-        @JavascriptInterface
         fun checkin(type: String, exerciseType: String, duration: Int, distance: Float, manualRainy: Boolean): String {
             val today = todayStr()
 
@@ -389,17 +380,6 @@ class MainActivity : Activity() {
             }
             PiggyData.saveDailyBalance()
             return ok(JSONObject().put("violations", arr))
-        }
-
-        @JavascriptInterface
-        fun getCity(): String {
-            return PiggyData.city
-        }
-
-        @JavascriptInterface
-        fun setCity(city: String): String {
-            PiggyData.city = city
-            return ok(JSONObject().put("city", city))
         }
 
         @JavascriptInterface

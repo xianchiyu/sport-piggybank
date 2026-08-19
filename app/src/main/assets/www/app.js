@@ -81,19 +81,9 @@ if (r.ok) {
 var d = r.data;
 renderPiggy(d.gold, d.silver, d.copper);
 }
-loadStreaks();
 loadTodayLog();
 updateCheckStatus();
 }
-}
-
-function loadStreaks() {
-var r = parseResult(Android.getStreaks());
-if (!r.ok) return;
-var d = r.data;
-var el = $('streakExercise'); if (el) el.textContent = d.exercise > 0 ? '连续' + d.exercise + '天' : '';
-el = $('streakBreakfast'); if (el) el.textContent = d.breakfast > 0 ? '连续' + d.breakfast + '天' : '';
-el = $('streakDinner'); if (el) el.textContent = d.dinner > 0 ? '连续' + d.dinner + '天' : '';
 }
 
 function updateCheckStatus() {
@@ -149,7 +139,6 @@ btn.classList.remove('pending');
 if (window.Android) {
 var r2 = parseResult(Android.getBalance());
 if (r2.ok) renderPiggy(r2.data.gold, r2.data.silver, r2.data.copper);
-loadStreaks();
 loadTodayLog();
 }
 setTimeout(function(){ coinDropAnimation('copper'); }, 100);
@@ -208,7 +197,6 @@ if (!r.ok) { toast(r.error); return; }
 toast('+' + r.data.coins + '铜');
 var r2 = parseResult(Android.getBalance());
 if (r2.ok) renderPiggy(r2.data.gold, r2.data.silver, r2.data.copper);
-loadStreaks();
 loadTodayLog();
 }
 $('btnExercise').classList.add('done');
@@ -358,8 +346,6 @@ $('qPenaltyTotal').textContent = '¥' + d.penaltyTotal;
 }
 var b = parseResult(Android.getBalance());
 if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
-var city = Android.getCity();
-$('cityInput').value = city;
 var sr = parseResult(Android.getSocialExemptStatus());
 if (sr.ok) {
 $('socUsed').textContent = sr.data.used + '/3';
@@ -444,12 +430,6 @@ loadMy();
 } else { toast('提现失败'); }
 }
 }
-}
-function doSetCity() {
-var city = $('cityInput').value.trim();
-if (!city) { toast('输入城市名'); return; }
-if (window.Android) Android.setCity(city);
-toast('城市已更新');
 }
 
 function doSocialExempt() {

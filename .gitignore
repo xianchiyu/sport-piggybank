@@ -1,35 +1,44 @@
-# Android 编译产物
+# ===== Android 编译产物 =====
 build/
 .gradle/
+.kotlin/
 local.properties
 *.iml
 .idea/
 captures/
 .cxx/
 
-# APK / 签名文件（绝不进仓库）
+# ===== APK / 签名文件（绝不进仓库） =====
 *.apk
 *.aab
 *.keystore
 *.jks
 
-# 系统文件
+# ===== 系统文件 =====
 .DS_Store
 Thumbs.db
 
-# 调试截图和脚本（开发过程产物，不进仓库）
+# ===== 调试截图和脚本（开发过程产物） =====
 preview/
 
-# 本地文档（不进仓库）
+# ===== 本地文档（开发辅助，不进仓库） =====
 项目总结.md
 校核报告*.md
 
-# 临时文件
+# ===== 冗余副本（Gradle 读取根目录 settings.gradle，此文件不生效） =====
+app/settings.gradle
+
+# ===== 临时文件 =====
 *.tmp
 *~
 *.hprof
 
-# 中间产物
-*.svg
+# ===== 中间产物 =====
+# *.svg   # 注意：如未来新增 svg 资源，需移除此规则或改为 !app/src/main/res/**/*.svg，否则会被静默漏提交
 *.log
 .agents/
+
+# ===== CI 必需：以下文件务必保留，勿加入忽略 =====
+# gradle/wrapper/gradle-wrapper.properties
+# gradle.properties
+# .github/workflows/build.yml

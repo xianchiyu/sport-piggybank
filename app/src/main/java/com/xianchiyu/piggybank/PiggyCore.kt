@@ -71,10 +71,6 @@ object PiggyData {
         get() = prefs?.getString("socExemptDate", "") ?: ""
         set(v) { prefs?.edit()?.putString("socExemptDate", v)?.apply() }
 
-    var city: String
-        get() = prefs?.getString("city", "beijing") ?: "beijing"
-        set(v) { prefs?.edit()?.putString("city", v)?.apply() }
-
     var firstUseDate: String
         get() = prefs?.getString("firstUseDate", "") ?: ""
         set(v) { prefs?.edit()?.putString("firstUseDate", v)?.apply() }
