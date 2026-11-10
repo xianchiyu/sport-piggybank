@@ -47,6 +47,24 @@ object PiggyData {
         get() = prefs?.getString("dnDate", "") ?: ""
         set(v) { prefs?.edit()?.putString("dnDate", v)?.apply() }
 
+    // 金刚功：不计入违规检测，次数累加不因漏天归零，只靠满轮重来
+    var jingangStreak: Int
+        get() = prefs?.getInt("jgStreak", 0) ?: 0
+        set(v) { prefs?.edit()?.putInt("jgStreak", v)?.apply() }
+
+    var lastJingangDate: String
+        get() = prefs?.getString("jgDate", "") ?: ""
+        set(v) { prefs?.edit()?.putString("jgDate", v)?.apply() }
+
+    // 长寿功：与早餐同规则，进违规检测
+    var changshouStreak: Int
+        get() = prefs?.getInt("csStreak", 0) ?: 0
+        set(v) { prefs?.edit()?.putInt("csStreak", v)?.apply() }
+
+    var lastChangshouDate: String
+        get() = prefs?.getString("csDate", "") ?: ""
+        set(v) { prefs?.edit()?.putString("csDate", v)?.apply() }
+
     var penaltyCount: Int
         get() = prefs?.getInt("penCount", 0) ?: 0
         set(v) { prefs?.edit()?.putInt("penCount", v)?.apply() }
@@ -94,6 +112,11 @@ object PiggyData {
     var dailyBalance: String
         get() = prefs?.getString("dailyBal", "{}") ?: "{}"
         set(v) { prefs?.edit()?.putString("dailyBal", v)?.apply() }
+
+    // ── 卡册：每张卡独立累计（复用 streak 字段），满 30 次兑 1 金后归零 ──
+    var lastCardGrantDate: String
+        get() = prefs?.getString("cardGrantDate", "") ?: ""
+        set(v) { prefs?.edit()?.putString("cardGrantDate", v)?.apply() }
 
     /**
      * 保存当天余额快照，自动只保留最近30天。
@@ -191,6 +214,28 @@ object CoinUtils {
         }
     }
 
+    // ── 卡册等级：一轮单项累计次数决定卡面颜色 ──────────
+    // 白卡 0-2，铜 3-6，银 7-14，金 15-24，闪 25+；满 30 次兑 1 金并归零
+    const val CARD_GOAL = 30
+
+    enum class CardTier { WHITE, COPPER, SILVER, GOLD, SHINY }
+
+    fun cardTier(count: Int): CardTier = when {
+        count >= 25 -> CardTier.SHINY
+        count >= 15 -> CardTier.GOLD
+        count >= 7 -> CardTier.SILVER
+        count >= 3 -> CardTier.COPPER
+        else -> CardTier.WHITE
+    }
+
+    fun cardTierKey(count: Int): String = when (cardTier(count)) {
+        CardTier.SHINY -> "shiny"
+        CardTier.GOLD -> "gold"
+        CardTier.SILVER -> "silver"
+        CardTier.COPPER -> "copper"
+        CardTier.WHITE -> "white"
+    }
+
     // duration 语义按 type 区分：run/walk 为分钟（10/20/30），rope 为个数（200/500/800）
     fun exerciseCoins(type: String, duration: Int, distance: Float, isRainy: Boolean): Int {
         if (isRainy || type == "indoor") return 3
@@ -246,6 +291,7 @@ object AutoPenalty {
             checkOne("exercise", day, "未运动", violations)
             checkOne("breakfast", day, "没做早饭", violations)
             checkOne("dinner", day, "晚餐不达标", violations)
+            checkOne("changshou", day, "没练长寿功", violations)
             day = addDays(day, 1)
         }
         return violations
@@ -273,6 +319,7 @@ object AutoPenalty {
             "exercise" -> PiggyData.lastExerciseDate
             "breakfast" -> PiggyData.lastBreakfastDate
             "dinner" -> PiggyData.lastDinnerDate
+            "changshou" -> PiggyData.lastChangshouDate
             else -> return
         }
         if (lastDate >= checkDay) return
@@ -302,6 +349,7 @@ object AutoPenalty {
             "exercise" -> PiggyData.exerciseStreak = 0
             "breakfast" -> PiggyData.breakfastStreak = 0
             "dinner" -> PiggyData.dinnerStreak = 0
+            "changshou" -> PiggyData.changshouStreak = 0
         }
 
         out.add(Violation(type, desc, cashPenalty, exempted = false))

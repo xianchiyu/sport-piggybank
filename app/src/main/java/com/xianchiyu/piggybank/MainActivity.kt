@@ -146,6 +146,8 @@ class MainActivity : Activity() {
                 "exercise" -> PiggyData.lastExerciseDate
                 "breakfast" -> PiggyData.lastBreakfastDate
                 "dinner" -> PiggyData.lastDinnerDate
+                "jingang" -> PiggyData.lastJingangDate
+                "changshou" -> PiggyData.lastChangshouDate
                 else -> return err("未知任务类型: $type")
             }
             if (lastDate == today) return err("今天已经打过此卡")
@@ -161,18 +163,35 @@ class MainActivity : Activity() {
                 "exercise" -> PiggyData.exerciseStreak
                 "breakfast" -> PiggyData.breakfastStreak
                 "dinner" -> PiggyData.dinnerStreak
+                "jingang" -> PiggyData.jingangStreak
+                "changshou" -> PiggyData.changshouStreak
                 else -> 0
             }
-            val newStreak = if (lastDate == yesterday) prevStreak + 1 else 1
+            // 晚餐社交豁免日算作“跳过”：既不打卡也不断签，连续次数得以延续
+            val twoDaysAgo = addDaysStr(yesterday, -1)
+            val continued = lastDate == yesterday ||
+                (type == "dinner" && lastDate == twoDaysAgo && PiggyData.socialExemptDate == yesterday)
+            // 金刚功不进违规检测，次数不清零，每次打卡都往后累加
+            val newStreak = if (type == "jingang") prevStreak + 1
+                            else if (continued) prevStreak + 1 else 1
 
             val baseCoins = when (type) {
                 "exercise" -> CoinUtils.exerciseCoins(exerciseType, duration, distance, isRainyToday)
                 "breakfast" -> 3
                 "dinner" -> 3
+                "jingang" -> 3
+                "changshou" -> 3
                 else -> 0
             }
             val mult = CoinUtils.multiplier(newStreak)
             val coinsEarned = (baseCoins * mult).toInt()
+
+            // 卡册：本轮累计次数（断签时已在违规检测中归零）
+            val cardCountAfter = newStreak
+            val cardCompleted = cardCountAfter >= CoinUtils.CARD_GOAL
+            // 金刚功满一轮不兑金，只重来
+            val cardGoldBonus = if (cardCompleted && type != "jingang") 1 else 0
+            val cardNextCount = if (cardCompleted) 0 else cardCountAfter
 
             val oldCopper = PiggyData.copper
             val oldSilver = PiggyData.silver
@@ -181,7 +200,7 @@ class MainActivity : Activity() {
             val (c, s, g) = CoinUtils.autoMerge(
                 PiggyData.copper + coinsEarned,
                 PiggyData.silver,
-                PiggyData.gold
+                PiggyData.gold + cardGoldBonus
             )
             PiggyData.copper = c
             PiggyData.silver = s
@@ -189,16 +208,24 @@ class MainActivity : Activity() {
 
             when (type) {
                 "exercise" -> {
-                    PiggyData.exerciseStreak = newStreak
+                    PiggyData.exerciseStreak = cardNextCount
                     PiggyData.lastExerciseDate = today
                 }
                 "breakfast" -> {
-                    PiggyData.breakfastStreak = newStreak
+                    PiggyData.breakfastStreak = cardNextCount
                     PiggyData.lastBreakfastDate = today
                 }
                 "dinner" -> {
-                    PiggyData.dinnerStreak = newStreak
+                    PiggyData.dinnerStreak = cardNextCount
                     PiggyData.lastDinnerDate = today
+                }
+                "jingang" -> {
+                    PiggyData.jingangStreak = cardNextCount
+                    PiggyData.lastJingangDate = today
+                }
+                "changshou" -> {
+                    PiggyData.changshouStreak = cardNextCount
+                    PiggyData.lastChangshouDate = today
                 }
             }
 
@@ -207,11 +234,20 @@ class MainActivity : Activity() {
 
             addTransaction("income", type, yuan, "${typeLabel(type)} +${coinsEarned}铜(x${mult})", Triple(g - oldGold, s - oldSilver, c - oldCopper))
 
+            // 卡册满勤兑金：只进交易流水，不弹提示（金刚功不兑金）
+            if (cardCompleted && type != "jingang") {
+                PiggyData.quarterIncome += 100
+                addTransaction("card_bonus", type, 1f, "${typeLabel(type)}卡满勤 +1金", Triple(1, 0, 0))
+            }
+
             PiggyData.saveDailyBalance()
             return ok(JSONObject().apply {
                 put("coins", coinsEarned)
                 put("multiplier", mult)
                 put("streak", newStreak)
+                put("cardCount", cardNextCount)
+                put("cardTier", CoinUtils.cardTierKey(if (cardCompleted) CoinUtils.CARD_GOAL else cardCountAfter))
+                put("cardCompleted", cardCompleted)
                 put("copper", c)
                 put("silver", s)
                 put("gold", g)
@@ -341,6 +377,77 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun getCardStatus(): String {
+            val today = todayStr()
+            fun card(count: Int, checked: Boolean, exempt: Boolean = false) = JSONObject().apply {
+                put("count", count)
+                put("tier", CoinUtils.cardTierKey(count))
+                put("checkedToday", checked)
+                put("exemptToday", exempt)
+            }
+            return ok(JSONObject().apply {
+                put("exercise", card(PiggyData.exerciseStreak, PiggyData.lastExerciseDate == today))
+                put("breakfast", card(PiggyData.breakfastStreak, PiggyData.lastBreakfastDate == today))
+                put("dinner", card(PiggyData.dinnerStreak, PiggyData.lastDinnerDate == today,
+                    PiggyData.socialExemptDate == today))
+                put("jingang", card(PiggyData.jingangStreak, PiggyData.lastJingangDate == today))
+                put("changshou", card(PiggyData.changshouStreak, PiggyData.lastChangshouDate == today))
+            })
+        }
+
+        @JavascriptInterface
+        fun importLegacy(totalCopper: Int, penaltyTotal: Int): String {
+            if (totalCopper < 0 || penaltyTotal < 0) return err("数值不能为负")
+            // 已有非零数据则拒绝导入，避免误操作冲掉现有数据
+            if (PiggyData.copper != 0 || PiggyData.silver != 0 || PiggyData.gold != 0 || PiggyData.penaltyTotal != 0) {
+                return err("已有数据，不能导入")
+            }
+            if (totalCopper == 0 && penaltyTotal == 0) return err("没有要导入的数据")
+
+            // 按自动合并规则拆分：铜≥15 进银，银≥15 进金
+            var copper = totalCopper
+            var silver = 0
+            var gold = 0
+            if (copper >= 15) {
+                val n = (copper - 5) / 10
+                silver = n
+                copper -= n * 10
+            }
+            if (silver >= 15) {
+                val n = (silver - 5) / 10
+                gold = n
+                silver -= n * 10
+            }
+
+            PiggyData.copper = copper
+            PiggyData.silver = silver
+            PiggyData.gold = gold
+            PiggyData.penaltyTotal = penaltyTotal
+            PiggyData.quarterIncome = totalCopper
+            PiggyData.saveDailyBalance()
+            return ok(JSONObject().apply {
+                put("copper", copper)
+                put("silver", silver)
+                put("gold", gold)
+                put("penaltyTotal", penaltyTotal)
+                put("yuan", CoinUtils.totalYuan(copper, silver, gold))
+            })
+        }
+
+        @JavascriptInterface
+        fun canImportLegacy(): String {
+            val hasData = PiggyData.copper != 0 || PiggyData.silver != 0 ||
+                PiggyData.gold != 0 || PiggyData.penaltyTotal != 0
+            return ok(JSONObject().apply {
+                put("hasData", hasData)
+                put("copper", PiggyData.copper)
+                put("silver", PiggyData.silver)
+                put("gold", PiggyData.gold)
+                put("penaltyTotal", PiggyData.penaltyTotal)
+            })
+        }
+
+        @JavascriptInterface
         fun getTransactions(): String {
             return try {
                 ok(JSONArray(PiggyData.transactions))
@@ -427,6 +534,16 @@ class MainActivity : Activity() {
                 cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
         }
 
+        private fun addDaysStr(dateStr: String, n: Int): String {
+            val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val d = fmt.parse(dateStr) ?: return dateStr
+            val cal = Calendar.getInstance()
+            cal.time = d
+            cal.add(Calendar.DAY_OF_MONTH, n)
+            return String.format(Locale.US, "%04d-%02d-%02d",
+                cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+        }
+
         private fun daysBetween(start: String, end: String): Int {
             val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val d1 = fmt.parse(start) ?: return 0
@@ -438,6 +555,8 @@ class MainActivity : Activity() {
             "exercise" -> "运动"
             "breakfast" -> "早饭"
             "dinner" -> "晚饭"
+            "jingang" -> "金刚功"
+            "changshou" -> "长寿功"
             else -> type
         }
 

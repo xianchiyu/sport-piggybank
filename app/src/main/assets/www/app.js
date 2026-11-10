@@ -17,10 +17,22 @@ var selectedExType = 'run';
 var selectedExDur = 30;
 var isManualRainy = false;
 
+// 五项任务的按钮 ID 映射
+var TASK_BTNS = {
+ exercise: 'btnExercise',
+ breakfast: 'btnBreakfast',
+ dinner: 'btnDinner',
+ jingang: 'btnJingang',
+ changshou: 'btnChangshou'
+};
+
 function init() {
 loadHome();
 checkAutoViolations();
 $('expenseAmount').addEventListener('input', updateCopperEq);
+$('exerciseModal').addEventListener('click', function(e){ if (e.target === this) closeExercise(); });
+var imp = $('importCopper');
+if (imp) imp.addEventListener('input', updateImportPreview);
 }
 
 
@@ -81,33 +93,34 @@ if (r.ok) {
 var d = r.data;
 renderPiggy(d.gold, d.silver, d.copper);
 }
-loadTodayLog();
-updateCheckStatus();
+var tr = parseResult(Android.getTransactions());
+loadTodayLog(tr);
+updateCheckStatus(tr);
 }
 }
 
-function updateCheckStatus() {
-var r = parseResult(Android.getTransactions());
+function updateCheckStatus(r) {
+r = r || parseResult(Android.getTransactions());
 if (!r.ok) return;
 var today = formatDate(new Date());
-var done = { exercise:false, breakfast:false, dinner:false };
+var KEYS = ['exercise','breakfast','dinner','jingang','changshou'];
+var done = {};
+KEYS.forEach(function(k){ done[k] = false; });
 (r.data || []).forEach(function(t){
-if (t.date === today && t.subtype) {
-if (t.subtype === 'exercise') done.exercise = true;
-else if (t.subtype === 'breakfast') done.breakfast = true;
-else if (t.subtype === 'dinner') done.dinner = true;
-}
+if (t.date === today && t.subtype && done.hasOwnProperty(t.subtype)) done[t.subtype] = true;
 });
-$('btnExercise').classList.toggle('done', done.exercise);
-$('btnExercise').classList.toggle('pending', !done.exercise);
-$('btnBreakfast').classList.toggle('done', done.breakfast);
-$('btnBreakfast').classList.toggle('pending', !done.breakfast);
-$('btnDinner').classList.toggle('done', done.dinner);
-$('btnDinner').classList.toggle('pending', !done.dinner);
+var btnMap = TASK_BTNS;
+for (var k in btnMap) {
+var el = $(btnMap[k]);
+if (!el) continue;
+el.classList.toggle('done', !!done[k]);
+el.classList.toggle('pending', !done[k]);
+}
+refreshTaskTiers();
 }
 
-function loadTodayLog() {
-var r = parseResult(Android.getTransactions());
+function loadTodayLog(r) {
+r = r || parseResult(Android.getTransactions());
 if (!r || !r.ok || !r.data) { $('todayLog').innerHTML = '<div class="hint" style="padding:4px 0;">暂无记录</div>'; return; }
 var today = formatDate(new Date());
 var txns = r.data.filter(function(t){ return t && t.date === today; });
@@ -121,21 +134,41 @@ var icon = '<span style="color:#4caf50;font-weight:700;">✓</span>';
 if (t.subtype === 'penalty_cash') icon = '<span style="color:#e65100;">⚠</span>';
 else if (t.type === 'expense' || t.subtype === 'purchase') icon = '<span style="color:#f0a23a;">−</span>';
 else if (t.subtype === 'social_exempt') icon = '<span style="color:#1565c0;">🛡</span>';
+else if (t.type === 'card_bonus') icon = '<span style="color:#f2bd3f;">✦</span>';
 html += '<div class="record-item">' + icon + ' ' + note + '</div>';
 });
 }
 $('todayLog').innerHTML = html;
 }
 
+/** 该任务今天是否已打卡（以按钮的 done 状态为准） */
+function isDoneToday(type) {
+var b = $(TASK_BTNS[type]);
+return !!(b && b.classList.contains('done'));
+}
+
+var checkinBusy = false;
+function lockCheckin() {
+if (checkinBusy) return false;
+checkinBusy = true;
+setTimeout(function(){ checkinBusy = false; }, 600);
+return true;
+}
+
 function quickCheckin(type) {
+if (isDoneToday(type)) { toast('今日已打卡'); return; }
+if (!lockCheckin()) return;
 if (window.Android) {
 var r = parseResult(Android.checkin(type, '', 0, 0, false));
 if (!r.ok) { toast(r.error); return; }
 toast('+' + r.data.coins + '铜');
 }
-var btn = type === 'breakfast' ? $('btnBreakfast') : $('btnDinner');
+var btn = $(TASK_BTNS[type]);
+if (btn) {
 btn.classList.add('done');
 btn.classList.remove('pending');
+}
+refreshTaskTiers();
 if (window.Android) {
 var r2 = parseResult(Android.getBalance());
 if (r2.ok) renderPiggy(r2.data.gold, r2.data.silver, r2.data.copper);
@@ -190,6 +223,8 @@ document.querySelectorAll('.ex-dur').forEach(function(b){b.classList.remove('act
 document.querySelector('.ex-dur[data-dur="'+dur+'"]').classList.add('active');
 }
 function doExerciseCheckin() {
+if (isDoneToday('exercise')) { toast('今日已打卡'); return; }
+if (!lockCheckin()) return;
 var dist = parseFloat($('exDistance').value) || 0;
 if (window.Android) {
 var r = parseResult(Android.checkin('exercise', selectedExType, selectedExDur, dist, isManualRainy));
@@ -201,6 +236,7 @@ loadTodayLog();
 }
 $('btnExercise').classList.add('done');
 $('btnExercise').classList.remove('pending');
+refreshTaskTiers();
 closeExercise();
 setTimeout(function(){ coinDropAnimation('copper'); }, 100);
 }
@@ -222,6 +258,23 @@ $('trendTitle').textContent = '最近7天趋势';
 renderTrendChart(txns, 7);
 }
 
+var TASK_TIERS = ['tier-white', 'tier-copper', 'tier-silver', 'tier-gold', 'tier-shiny'];
+
+/** 把本轮累计次数对应的档位挂到首页三个打卡按钮上 */
+function refreshTaskTiers() {
+if (!window.Android) return;
+var r = parseResult(Android.getCardStatus());
+if (!r.ok || !r.data) return;
+var map = TASK_BTNS;
+for (var key in map) {
+var el = $(map[key]);
+if (!el) continue;
+var st = r.data[key] || {};
+for (var i = 0; i < TASK_TIERS.length; i++) el.classList.remove(TASK_TIERS[i]);
+if (st.checkedToday) el.classList.add('tier-' + (st.tier || 'white'));
+}
+}
+
 function renderCheckinGrid(txns) {
 var days = 7;
 var dates = [];
@@ -237,14 +290,17 @@ html += '<div>' + (dates[i].getMonth()+1) + '/' + dates[i].getDate() + '</div>';
 }
 html += '</div>';
 var tasks = [
-{ key:'exercise',  label:'运动', color:'green',  ico:'img/ico_run.png' },
-{ key:'breakfast', label:'早餐', color:'yellow', ico:'img/ico_egg.png' },
-{ key:'dinner',    label:'晚餐', color:'purple', ico:'img/ico_lunch.png' }
+{ key:'exercise',  label:'运动', color:'green',  ico:'img/ico_exercise.png' },
+{ key:'breakfast', label:'早餐', color:'yellow', ico:'img/ico_breakfast.png' },
+{ key:'dinner',    label:'晚餐', color:'purple', ico:'img/ico_dinner.png' },
+{ key:'jingang',   label:'金刚功', color:'teal', ico:'img/ico_jingang.png' },
+{ key:'changshou', label:'长寿功', color:'rose', ico:'img/ico_changshou.png' }
 ];
 for (var ti = 0; ti < tasks.length; ti++) {
 var t = tasks[ti];
 html += '<div class="cg-row">';
-html += '<div class="cg-label"><span class="cg-badge '+t.color+'"><img src="'+t.ico+'" alt="'+t.label+'"></span>' + t.label + '</div>';
+var badgeInner = '<img src="' + t.ico + '" alt="' + t.label + '">';
+html += '<div class="cg-label"><span class="cg-badge '+t.color+'">' + badgeInner + '</span>' + t.label + '</div>';
 for (var di = 0; di < dates.length; di++) {
 var dStr = formatDate(dates[di]);
 var done = txns.some(function(x){
@@ -297,10 +353,10 @@ var maxV = 1;
 for (var i = 0; i < sG.length; i++) if (sG[i] > maxV) maxV = sG[i];
 for (var i = 0; i < sS.length; i++) if (sS[i] > maxV) maxV = sS[i];
 for (var i = 0; i < sC.length; i++) if (sC[i] > maxV) maxV = sC[i];
+// 纵轴固定 0-20：铜到 15 进银、银到 15 进金，单个币种到不了 20，留出天花板即可
 var niceMax = 20;
-var yTicks = [0, niceMax/4, niceMax/2, niceMax*3/4, niceMax];
-var html = '';
-for (var i = 0; i < yTicks.length; i++) {
+var yTicks = [0, 5, 10, 15, 20];
+var html = '';for (var i = 0; i < yTicks.length; i++) {
 var y = padT + ch - (yTicks[i] / niceMax) * ch;
 html += '<line x1="' + padL + '" y1="' + y + '" x2="' + (padL+cw) + '" y2="' + y + '" stroke="#eef0f3" stroke-width="1"/>';
 html += '<text x="' + (padL-6) + '" y="' + (y+3) + '" text-anchor="end" font-size="10" fill="#b0b6bd">' + yTicks[i] + '</text>';
@@ -334,6 +390,34 @@ linePath(sG, '#f2bd3f', 2);
 svg.innerHTML = html;
 }
 
+function doImportLegacy() {
+if (!window.Android) { toast('仅 App 内可用'); return; }
+var copper = parseInt($('importCopper').value, 10);
+var penalty = parseInt($('importPenalty').value, 10);
+if (isNaN(copper) || copper < 0) { toast('请输入铜币总数'); return; }
+if (isNaN(penalty) || penalty < 0) penalty = 0;
+if (copper === 0 && penalty === 0) { toast('没有要导入的数据'); return; }
+var r = parseResult(Android.importLegacy(copper, penalty));
+if (!r.ok) { toast(r.error); return; }
+var d = r.data;
+$('importPreview').textContent = '已导入：金 ' + d.gold + ' / 银 ' + d.silver + ' / 铜 ' + d.copper;
+toast('导入成功');
+$('importCopper').value = '';
+$('importPenalty').value = '';
+var b = parseResult(Android.getBalance());
+if (b.ok) renderPiggy(b.data.gold, b.data.silver, b.data.copper);
+loadMy();
+}
+
+function updateImportPreview() {
+var v = parseInt($('importCopper').value, 10);
+if (isNaN(v) || v < 0) { $('importPreview').textContent = '输入后自动拆分金／银／铜'; return; }
+var copper = v, silver = 0, gold = 0;
+if (copper >= 15) { var n = Math.floor((copper - 5) / 10); silver = n; copper -= n * 10; }
+if (silver >= 15) { var m = Math.floor((silver - 5) / 10); gold = m; silver -= m * 10; }
+$('importPreview').textContent = '将拆分为：金 ' + gold + ' / 银 ' + silver + ' / 铜 ' + copper;
+}
+
 function loadMy() {
 if (window.Android) {
 var r = parseResult(Android.getQuarterSummary());
@@ -363,6 +447,18 @@ $('penCount').textContent = pr.data.count + '次';
 $('penNext').textContent = '¥' + pr.data.nextPenalty;
 $('penDays').textContent = pr.data.daysLeft + '天';
 }
+// 已有数据时禁用导入入口
+if (!window.Android) { /* 预览环境跳过 */ }
+else {
+var ci = parseResult(Android.canImportLegacy());
+if (ci.ok && ci.data.hasData) {
+var btn = document.querySelector('[onclick="doImportLegacy()"]');
+if (btn) { btn.disabled = true; btn.textContent = '已有数据，不可导入'; btn.style.opacity = 0.45; }
+if ($('importCopper')) $('importCopper').disabled = true;
+if ($('importPenalty')) $('importPenalty').disabled = true;
+$('importPreview').textContent = '当前已有数据，导入已关闭';
+}
+}
 }
 loadTxnList();
 }
@@ -389,6 +485,7 @@ var icon = '<span style="color:#4caf50;">●</span>';
 if (t.subtype === 'penalty_cash') icon = '<span style="color:#e65100;">●</span>';
 else if (t.type === 'expense' || t.subtype === 'purchase') icon = '<span style="color:#f0a23a;">●</span>';
 else if (t.subtype === 'social_exempt') icon = '<span style="color:#1565c0;">●</span>';
+else if (t.type === 'card_bonus') icon = '<span style="color:#f2bd3f;">●</span>';
 var note = (t.note || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 html += '<div class="log-item">' + icon + ' ' + t.date.slice(5) + ' ' + note + '</div>';
 });

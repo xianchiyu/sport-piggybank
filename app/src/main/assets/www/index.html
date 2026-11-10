@@ -51,21 +51,43 @@
 
 <div class="section">
 <div class="section-title">今日打卡</div>
-<div class="tasks">
+<div class="tasks tasks-row1">
 <button class="task green" id="btnExercise" onclick="openExercise()">
-<img class="task-ico" src="img/ico_run.png" alt="运动">
+<span class="task-inner">
+<img class="task-ico" src="img/ico_exercise.png" alt="运动">
 <span class="task-name">运动</span>
+</span>
 <span class="check" id="checkExercise"><span class="check-ok">✓</span></span>
 </button>
 <button class="task yellow" id="btnBreakfast" onclick="quickCheckin('breakfast')">
-<img class="task-ico" src="img/ico_egg.png" alt="早餐">
+<span class="task-inner">
+<img class="task-ico" src="img/ico_breakfast.png" alt="早餐">
 <span class="task-name">早餐</span>
+</span>
 <span class="check" id="checkBreakfast"><span class="check-ok">✓</span></span>
 </button>
 <button class="task purple" id="btnDinner" onclick="quickCheckin('dinner')">
-<img class="task-ico" src="img/ico_lunch.png" alt="晚餐">
+<span class="task-inner">
+<img class="task-ico" src="img/ico_dinner.png" alt="晚餐">
 <span class="task-name">晚餐</span>
+</span>
 <span class="check" id="checkDinner"><span class="check-ok">✓</span></span>
+</button>
+</div>
+<div class="tasks tasks-row2">
+<button class="task teal" id="btnJingang" onclick="quickCheckin('jingang')">
+<span class="task-inner">
+<img class="task-ico" src="img/ico_jingang.png" alt="金刚功">
+<span class="task-name">金刚功</span>
+</span>
+<span class="check" id="checkJingang"><span class="check-ok">✓</span></span>
+</button>
+<button class="task rose" id="btnChangshou" onclick="quickCheckin('changshou')">
+<span class="task-inner">
+<img class="task-ico" src="img/ico_changshou.png" alt="长寿功">
+<span class="task-name">长寿功</span>
+</span>
+<span class="check" id="checkChangshou"><span class="check-ok">✓</span></span>
 </button>
 </div>
 </div>
@@ -179,6 +201,17 @@
 <div class="section">
 <div class="section-title">交易记录</div>
 <div class="log-list" id="txnList"></div>
+</div>
+
+<div class="section">
+<div class="section-title">导入历史数据</div>
+<div class="hint" style="padding:0 0 8px;">更新后余额清零时使用。已有数据将不可导入。</div>
+<div class="consume-form">
+<input type="number" id="importCopper" placeholder="铜币总数" class="input" min="0" step="1">
+<input type="number" id="importPenalty" placeholder="罚金总额(元)" class="input" min="0" step="1">
+<div class="hint" id="importPreview" style="padding:2px 0;">输入后自动拆分金／银／铜</div>
+<button class="btn-primary" onclick="doImportLegacy()">导入</button>
+</div>
 </div>
 
 <div class="section">

@@ -62,11 +62,16 @@ color:#24323b;
 display:flex;
 gap:10px;
 }
+/* 五项任务：第一排三个，第二排两个居中（五环排布） */
+.tasks-row1 { margin-bottom:10px; }
+.tasks-row2 {
+ width:calc(66.6667% + 3.3px);
+ margin:0 auto;
+}
 .task {
 flex:1;
-border:none;
-border-radius:16px;
-padding:14px 8px 12px;
+border-radius:14px;
+padding:10px 6px 9px;
 display:flex;
 flex-direction:column;
 align-items:center;
@@ -74,14 +79,63 @@ justify-content:center;
 cursor:pointer;
 position:relative;
 font-family:inherit;
-transition:transform 0.15s;
+transition:transform 0.15s, border-color 0.35s ease, box-shadow 0.35s ease;
 }
 .task:active { transform:scale(0.96); }
 .task.green { background:#eef6ed; }
 .task.yellow { background:#fff6e8; }
 .task.purple { background:#f6effa; }
-.task-ico { width:50px; height:50px; margin-bottom:6px; }
-.task-name { font-size:13px; font-weight:600; color:#24323b; }
+.task.teal { background:#eaf5f4; }
+.task.rose { background:#fdf0f1; }
+/* 图标统一为同一套卡通贴纸 PNG（transparent 背景，44px 槽位） */
+.task {
+ transition:transform 0.15s, background 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* ── 打卡状态：用边框颜色表达等级，底色保持身份色 ─────────────
+   默认灰边；打卡后 白 0-2、铜 3-6、银 7-14、金 15-24、闪 25+ */
+.task {
+ border:3px solid #e2e5e9;
+}
+.task.done.tier-white  { border-color:#d4d9dd; box-shadow:0 1px 3px rgba(20,30,30,.05); }
+.task.done.tier-copper { border-color:#d09a6e; box-shadow:0 1px 3px rgba(20,30,30,.06), 0 2px 10px rgba(208,154,110,.24); }
+.task.done.tier-silver { border-color:#93aab9; box-shadow:0 1px 3px rgba(20,30,30,.06), 0 2px 10px rgba(147,170,185,.26); }
+.task.done.tier-gold   { border-color:#dcb45c; box-shadow:0 1px 3px rgba(20,30,30,.06), 0 2px 12px rgba(220,180,92,.28); }
+.task.done.tier-shiny  {
+ border-color:transparent;
+ background-image:
+ linear-gradient(#eef6ed,#eef6ed),
+ linear-gradient(140deg,#ff5fa2,#ffa443 20%,#ffe45c 34%,#5df2a3 48%,#3fd8ff 62%,#7a83ff 76%,#d77cff 88%,#ff5fa2);
+ background-origin:border-box;
+ background-clip:padding-box, border-box;
+ box-shadow:0 1px 3px rgba(20,30,30,.06), 0 3px 16px rgba(160,120,220,.30);
+}
+.task.done.tier-shiny.yellow {
+ background-image:
+ linear-gradient(#fff6e8,#fff6e8),
+ linear-gradient(140deg,#ff5fa2,#ffa443 20%,#ffe45c 34%,#5df2a3 48%,#3fd8ff 62%,#7a83ff 76%,#d77cff 88%,#ff5fa2);
+}
+.task.done.tier-shiny.purple {
+ background-image:
+ linear-gradient(#f6effa,#f6effa),
+ linear-gradient(140deg,#ff5fa2,#ffa443 20%,#ffe45c 34%,#5df2a3 48%,#3fd8ff 62%,#7a83ff 76%,#d77cff 88%,#ff5fa2);
+}
+.task.done.tier-shiny.teal {
+ background-image:
+ linear-gradient(#eaf5f4,#eaf5f4),
+ linear-gradient(140deg,#ff5fa2,#ffa443 20%,#ffe45c 34%,#5df2a3 48%,#3fd8ff 62%,#7a83ff 76%,#d77cff 88%,#ff5fa2);
+}
+.task.done.tier-shiny.rose {
+ background-image:
+ linear-gradient(#fdf0f1,#fdf0f1),
+ linear-gradient(140deg,#ff5fa2,#ffa443 20%,#ffe45c 34%,#5df2a3 48%,#3fd8ff 62%,#7a83ff 76%,#d77cff 88%,#ff5fa2);
+}
+
+/* 打卡后隐藏旧的对勾：边框颜色已经说明了状态 */
+.task.done .check { display:none !important; }
+
+.task-ico { width:46px; height:46px; margin-bottom:4px; }
+.task-name { font-size:12px; font-weight:600; color:#24323b; }
 .task .check {
 position:absolute; top:8px; right:8px;
 width:22px; height:22px; border-radius:50%;
@@ -179,12 +233,14 @@ font-weight:700;
 font-size:11px;
 color:#24323b;
 }
-.cg-label img { width:14px; height:14px; }
-.cg-badge { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; margin-right:4px; }
-.cg-badge img { width:13px; height:13px; }
+.cg-label img { width:15px; height:15px; }
+.cg-badge { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; margin-right:2px; }
+.cg-badge img { width:15px; height:15px; }
 .cg-badge.green { background:#eef6ed; }
 .cg-badge.yellow { background:#fff6e8; }
 .cg-badge.purple { background:#f6effa; }
+.cg-badge.teal { background:#eaf5f4; }
+.cg-badge.rose { background:#fdf0f1; }
 .cg-cell {
 display:flex; align-items:center; justify-content:center;
 width:24px; height:24px; margin:0 auto;
@@ -218,12 +274,12 @@ box-shadow:0 2px 12px rgba(0,0,0,0.04);
 
 .quarter-stats {
 display:flex;
-gap:12px;
+gap:6px;
 margin-bottom:8px;
 }
-.stat { flex:1; text-align:center; }
-.stat-label { display:block; font-size:12px; color:#6a7377; }
-.stat-val { display:block; font-size:18px; font-weight:700; margin-top:4px; }
+.stat { flex:1; text-align:center; min-width:0; }
+.stat-label { display:block; font-size:11px; color:#6a7377; white-space:nowrap; }
+.stat-val { display:block; font-size:14px; font-weight:700; margin-top:4px; white-space:nowrap; letter-spacing:-0.2px; }
 .stat.highlight .stat-val { color:#4caf50; }
 .ledger-coins-row {
 display:flex;
@@ -485,7 +541,7 @@ to { transform:translateY(0) scale(1); opacity:1; }
 
 @media (max-width:360px) {
 .piggy-img { max-width:200px; width:100%; }
-.task-ico { width:40px; height:40px; }
+.task-ico { width:42px; height:42px; }
 .coin-img { width:40px; height:40px; }
 .coin-num { font-size:22px; }
 }
