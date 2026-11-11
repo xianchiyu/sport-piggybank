@@ -26,7 +26,22 @@ var TASK_BTNS = {
  changshou: 'btnChangshou'
 };
 
+
+/** 让打卡卡片高度等于宽度（不依赖 aspect-ratio / padding-top） */
+function squareTasks() {
+  var cards = document.querySelectorAll('.task');
+  for (var i = 0; i < cards.length; i++) {
+    var el = cards[i];
+    var w = el.offsetWidth;
+    if (w > 0) el.style.height = w + 'px';
+  }
+}
+window.addEventListener('resize', squareTasks);
+// 图片加载完成后重新量一次，避免尺寸变化导致比例偏移
+window.addEventListener('load', function(){ setTimeout(squareTasks, 60); });
+
 function init() {
+setTimeout(squareTasks, 0);
 loadHome();
 checkAutoViolations();
 $('expenseAmount').addEventListener('input', updateCopperEq);
@@ -46,7 +61,7 @@ document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('acti
 document.querySelectorAll('.nav-item').forEach(function(t){ t.classList.remove('active'); });
 $('page-' + name).classList.add('active');
 $('tab-' + name).classList.add('active');
-if (name === 'home') loadHome();
+if (name === 'home') { loadHome(); setTimeout(squareTasks, 0); }
 if (name === 'stats') loadStats();
 if (name === 'my') loadMy();
 }

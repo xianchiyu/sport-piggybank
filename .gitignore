@@ -1,4 +1,4 @@
-# ===== Android 编译产物 =====
+﻿# ===== Android 缂栬瘧浜х墿 =====
 build/
 .gradle/
 .kotlin/
@@ -8,37 +8,34 @@ local.properties
 captures/
 .cxx/
 
-# ===== APK / 签名文件（绝不进仓库） =====
+# ===== APK / 绛惧悕鏂囦欢锛堢粷涓嶈繘浠撳簱锛?=====
 *.apk
 *.aab
 *.keystore
 *.jks
 
-# ===== 系统文件 =====
+# ===== 绯荤粺鏂囦欢 =====
 .DS_Store
 Thumbs.db
 
-# ===== 调试截图和脚本（开发过程产物） =====
-preview/
+# ===== 鏈湴鏂囨。锛堝紑鍙戣緟鍔╋紝涓嶈繘浠撳簱锛?=====
+椤圭洰鎬荤粨.md
+鏍℃牳鎶ュ憡*.md
 
-# ===== 本地文档（开发辅助，不进仓库） =====
-项目总结.md
-校核报告*.md
-
-# ===== 冗余副本（Gradle 读取根目录 settings.gradle，此文件不生效） =====
+# ===== 鍐椾綑鍓湰锛圙radle 璇诲彇鏍圭洰褰?settings.gradle锛屾鏂囦欢涓嶇敓鏁堬級 =====
 app/settings.gradle
 
-# ===== 临时文件 =====
+# ===== 涓存椂鏂囦欢 =====
 *.tmp
 *~
 *.hprof
 
-# ===== 中间产物 =====
-# *.svg   # 注意：如未来新增 svg 资源，需移除此规则或改为 !app/src/main/res/**/*.svg，否则会被静默漏提交
+# ===== 涓棿浜х墿 =====
+# *.svg   # 娉ㄦ剰锛氬鏈潵鏂板 svg 璧勬簮锛岄渶绉婚櫎姝よ鍒欐垨鏀逛负 !app/src/main/res/**/*.svg锛屽惁鍒欎細琚潤榛樻紡鎻愪氦
 *.log
 .agents/
 
-# ===== CI 必需：以下文件务必保留，勿加入忽略 =====
+# ===== CI 蹇呴渶锛氫互涓嬫枃浠跺姟蹇呬繚鐣欙紝鍕垮姞鍏ュ拷鐣?=====
 # gradle/wrapper/gradle-wrapper.properties
 # gradle.properties
 # .github/workflows/build.yml
